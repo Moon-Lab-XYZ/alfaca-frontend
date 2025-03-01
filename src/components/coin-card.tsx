@@ -2,10 +2,10 @@
 import { useState, useMemo } from "react";
 import { Bell } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from 'next/navigation'
 import { CreatorInfo } from "./creator-info";
 import { OtherCoinsButton } from "./other-coins-button";
-import { pastelGradients } from "@/utils/coin-card-utils";
+import { pastelGradients } from "@/lib/coin-card-utils";
 
 interface CoinCardProps {
   name: string;
@@ -27,12 +27,12 @@ interface CoinCardProps {
   simplified?: boolean;
 }
 
-export const CoinCard = ({ 
-  name, 
-  ticker, 
-  image, 
-  timestamp, 
-  volume24h, 
+export const CoinCard = ({
+  name,
+  ticker,
+  image,
+  timestamp,
+  volume24h,
   rank,
   creator = {
     username: "anonymous",
@@ -43,7 +43,7 @@ export const CoinCard = ({
 }: CoinCardProps) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const router = useRouter()
 
   // Use rank to generate consistent but different gradients
   const avatarGradient = useMemo(() => {
@@ -60,49 +60,49 @@ export const CoinCard = ({
     e.stopPropagation();
     setIsSubscribed(!isSubscribed);
     toast({
-      description: isSubscribed 
-        ? `Unsubscribed from ${creator.username}` 
+      description: isSubscribed
+        ? `Unsubscribed from ${creator.username}`
         : `Subscribed to ${creator.username}`,
       duration: 2000,
     });
   };
 
   const handleClick = () => {
-    navigate(`/coin/${ticker.toLowerCase()}`);
+    router.push(`/coin/${ticker.toLowerCase()}`);
   };
 
   const handleCreatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/user/${creator.username}`);
+    router.push(`/user/${creator.username}`);
   };
 
   const handleCreatorCoinsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/user/${creator.username}`, {
-      state: {
-        coins: [
-          {
-            name,
-            ticker,
-            image,
-            volume24h
-          },
-          ...(creator.otherCoins || []).map(coin => ({
-            name: coin.name,
-            ticker: coin.ticker,
-            image: coin.image,
-            volume24h: coin.volume24h
-          }))
-        ]
-      }
+    router.push(`/user/${creator.username}`, {
+      // state: {
+      //   coins: [
+      //     {
+      //       name,
+      //       ticker,
+      //       image,
+      //       volume24h
+      //     },
+      //     ...(creator.otherCoins || []).map(coin => ({
+      //       name: coin.name,
+      //       ticker: coin.ticker,
+      //       image: coin.image,
+      //       volume24h: coin.volume24h
+      //     }))
+      //   ]
+      // }
     });
   };
 
   return (
-    <div 
+    <div
       onClick={handleClick}
       className={`bg-[#1A1A1A] rounded-2xl p-4 ${
-        rank === 1 
+        rank === 1
           ? 'border-2 border-[#E5DEFF] shadow-[0_0_15px_rgba(229,222,255,0.3)]'
           : 'border border-white/5 hover:border-white/10'
       } transition-all duration-300 cursor-pointer`}
@@ -111,7 +111,7 @@ export const CoinCard = ({
         <div className="text-xl font-semibold text-white/90">
           #{rank}
         </div>
-        
+
         <CreatorInfo
           username={creator.username}
           image={creator.image}
@@ -123,8 +123,8 @@ export const CoinCard = ({
         <button
           onClick={handleSubscribe}
           className={`p-2.5 rounded-xl transition-all duration-200 ${
-            isSubscribed 
-              ? 'bg-[#9b87f5]/20 text-[#9b87f5] border border-[#9b87f5]/30' 
+            isSubscribed
+              ? 'bg-[#9b87f5]/20 text-[#9b87f5] border border-[#9b87f5]/30'
               : 'text-white/30 hover:text-white/70 bg-black/40 hover:bg-black/60'
           }`}
         >

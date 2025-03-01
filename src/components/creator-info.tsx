@@ -1,6 +1,6 @@
 
 import { CreatorAvatar } from "./creator-avatar";
-import { formatVolume } from "@/utils/coin-card-utils";
+import { formatVolume } from "@/lib/coin-card-utils";
 
 interface CreatorInfoProps {
   username: string;
@@ -20,7 +20,7 @@ export const CreatorInfo = ({
   onClick
 }: CreatorInfoProps) => {
   return (
-    <div 
+    <div
       className="flex flex-1 items-center gap-3"
       onClick={onClick}
     >
