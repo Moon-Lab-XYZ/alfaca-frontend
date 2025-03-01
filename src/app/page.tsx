@@ -2,7 +2,14 @@
 
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { CoinCard } from "@/components/coin-card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import sdk, {
+  AddFrame,
+  FrameNotificationDetails,
+  type Context,
+} from "@farcaster/frame-sdk";
+import { useSession } from "next-auth/react"
+import { signIn, signOut, getCsrfToken } from "next-auth/react";
 
 const coinNames = [
   "Zerebro", "AiXBT", "Quantum Pepe", "NeuroPad", "Sigma Inu",
@@ -52,6 +59,47 @@ const mockCoins = generateMockCoins(24);
 const Index = () => {
   const [prizePool, setPrizePool] = useState(126389.37);
   const [timeLeft, setTimeLeft] = useState(1440); // 24 hours in minutes
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+
+  const [context, setContext] = useState<Context.FrameContext>();
+
+  const { data: session, status } = useSession();
+
+  const getNonce = useCallback(async () => {
+    const nonce = await getCsrfToken();
+    if (!nonce) throw new Error("Unable to generate nonce");
+    return nonce;
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      setContext(await sdk.context);
+      sdk.actions.ready();
+      const result = await sdk.actions.signIn({
+        nonce: await getNonce(),
+      });
+      await signIn("credentials", {
+        message: result.message,
+        signature: result.signature,
+        redirect: false,
+      });
+      console.log(result);
+    };
+    if (sdk && !isSDKLoaded) {
+      setIsSDKLoaded(true);
+      load();
+    }
+  }, [isSDKLoaded]);
+
+  useEffect(() => {
+    if (session) {
+      console.log(session);
+    }
+    if (status) {
+      console.log(status);
+    }
+  }, [session, status]);
+
 
   useEffect(() => {
     const prizeInterval = setInterval(() => {
@@ -99,6 +147,7 @@ const Index = () => {
             <div>
               <span className="text-white/70 text-lg flex items-center justify-center gap-2">
                 🏆<span className="text-white">🦙</span> PRIZE POOL <span className="text-white">🦙</span>🏆
+                <span>{JSON.stringify(context, null, 2)}</span>
               </span>
               <div className="font-bold text-3xl text-white">
                 ${prizePool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

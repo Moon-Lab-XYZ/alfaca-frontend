@@ -57,30 +57,31 @@ const Launch = () => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await fetch('http://localhost:3000/create-token', {
+    const result = await fetch('/api/create-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Authorization: `Bearer ${accessToken}`,
       },
+      credentials: 'include',
       body: JSON.stringify({
       }),
     });
 
-    // try {
-    //   await new Promise((resolve) => setTimeout(resolve, 2000));
-    //   toast({
-    //     description: "Your token has been launched successfully.",
-    //   });
-    //   setShowShareModal(true);
-    // } catch (error) {
-    //   toast({
-    //     description: "Failed to launch token. Please try again.",
-    //     variant: "destructive",
-    //   });
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast({
+        description: "Your token has been launched successfully.",
+      });
+      setShowShareModal(true);
+    } catch (error) {
+      toast({
+        description: "Failed to launch token. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
