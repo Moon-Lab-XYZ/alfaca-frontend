@@ -8,14 +8,20 @@ import {
 } from "@/components/ui/dialog";
 import { Settings, LogOut, HelpCircle, ExternalLink } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { useRouter } from 'next/navigation'
 
 interface SettingsDialogProps {
   trigger?: React.ReactNode;
 }
 
 export const SettingsDialog = ({ trigger }: SettingsDialogProps) => {
+  const router = useRouter();
+
   async function handleSignout() {
-    await signOut();
+    await signOut({
+      redirect: false,
+    });
+    router.push("/");
   }
 
   return (

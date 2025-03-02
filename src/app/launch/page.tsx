@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { toast } from "@/hooks/use-toast";
 import { ImagePlus, Twitter, Share2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { createClient } from "@supabase/supabase-js";
+import { signIn, getCsrfToken } from "next-auth/react";
+import sdk, {
+} from "@farcaster/frame-sdk";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -25,10 +28,39 @@ const Launch = () => {
     image: null as File | null,
     imageUrl: "",
   });
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
 
   useEffect(() => {
     nameInputRef.current?.focus();
   }, []);
+
+  const getNonce = useCallback(async () => {
+    const nonce = await getCsrfToken();
+    if (!nonce) throw new Error("Unable to generate nonce");
+    return nonce;
+  }, []);
+
+
+  useEffect(() => {
+    const load = async () => {
+      sdk.actions.ready();
+
+      if (status !== "authenticated") {
+        const result = await sdk.actions.signIn({
+          nonce: await getNonce(),
+        });
+        const response = await signIn("credentials", {
+          message: result.message,
+          signature: result.signature,
+          redirect: false,
+        });
+      }
+    };
+    if (sdk && !isSDKLoaded) {
+      setIsSDKLoaded(true);
+      load();
+    }
+  }, [isSDKLoaded]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();

@@ -58,47 +58,18 @@ const mockCoins = generateMockCoins(24);
 
 const Index = () => {
   const [prizePool, setPrizePool] = useState(126389.37);
-  const [timeLeft, setTimeLeft] = useState(1440); // 24 hours in minutes
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-
-  const { data: session, status } = useSession();
-
-  const getNonce = useCallback(async () => {
-    const nonce = await getCsrfToken();
-    if (!nonce) throw new Error("Unable to generate nonce");
-    return nonce;
-  }, []);
 
   useEffect(() => {
     const load = async () => {
       sdk.actions.ready();
-
-      if (status !== "authenticated") {
-        const result = await sdk.actions.signIn({
-          nonce: await getNonce(),
-        });
-        const response = await signIn("credentials", {
-          message: result.message,
-          signature: result.signature,
-          redirect: false,
-        });
-      }
     };
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);
       load();
     }
   }, [isSDKLoaded]);
-
-  useEffect(() => {
-    if (session) {
-      console.log(session);
-    }
-    if (status) {
-      console.log(status);
-    }
-  }, [session, status]);
-
 
   useEffect(() => {
     const prizeInterval = setInterval(() => {
@@ -112,27 +83,56 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    const calculateTimeUntil4PMPT = () => {
+      const now = new Date();
+
+      // Get current date in PT (Pacific Time)
+      // Note: This correctly accounts for DST by using standard IANA timezone names
+      const options = { timeZone: 'America/Los_Angeles' };
+      const pacificTimeNow = new Date(now.toLocaleString('en-US', options));
+
+      // Create a date object for 4PM Pacific Time today
+      const targetDate = new Date(pacificTimeNow);
+      targetDate.setHours(16, 0, 0, 0); // Set to 4PM PT
+
+      // If current Pacific Time is past 4PM PT, set target to next day
+      if (pacificTimeNow > targetDate) {
+        targetDate.setDate(targetDate.getDate() + 1);
+      }
+
+      // Convert the PT target time back to the local time of the device
+      const targetInLocalTime = new Date(targetDate.toLocaleString('en-US'));
+
+      // Calculate the difference in milliseconds
+      const diff = targetInLocalTime.getTime() - now.getTime();
+
+      // Convert to hours, minutes, seconds
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      return { hours, minutes, seconds };
+    };
+
+    // Update time initially
+    setTimeLeft(calculateTimeUntil4PMPT());
+
+    // Set up interval to update every second
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) return 1440; // Reset to 24 hours when reaching 0
-        return prev - 1;
-      });
-    }, 1000); // Update every second
+      setTimeLeft(calculateTimeUntil4PMPT());
+    }, 1000);
 
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    const secs = mins % 60;
+  const formatTime = (timeObj: any) => {
     return (
       <>
-        <span className="text-white">{hours}</span>
+        <span className="text-white">{timeObj.hours}</span>
         <span className="text-white/50">h </span>
-        <span className="text-white">{mins}</span>
-        <span className="text-white/50">min</span>
-        <span className="text-white">{secs}</span>
+        <span className="text-white">{timeObj.minutes}</span>
+        <span className="text-white/50">min </span>
+        <span className="text-white">{timeObj.seconds}</span>
         <span className="text-white/50">sec remaining</span>
       </>
     );
@@ -158,7 +158,7 @@ const Index = () => {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 mt-4 space-y-3">
+      <div className="max-w-md mx-auto px-4 mt-4 space-y-3 pb-12">
         {mockCoins.map((coin, index) => (
           <CoinCard key={index} {...coin} />
         ))}
