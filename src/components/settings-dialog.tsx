@@ -7,12 +7,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Settings, LogOut, HelpCircle, ExternalLink } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 interface SettingsDialogProps {
   trigger?: React.ReactNode;
 }
 
 export const SettingsDialog = ({ trigger }: SettingsDialogProps) => {
+  async function handleSignout() {
+    await signOut();
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -27,9 +32,9 @@ export const SettingsDialog = ({ trigger }: SettingsDialogProps) => {
           <DialogTitle className="text-xl font-bold">Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-4">
-          <button 
+          <button
             className="w-full flex items-center gap-3 px-4 py-3 text-left text-lg font-semibold text-white/90 hover:bg-white/5 rounded-xl transition-colors"
-            onClick={() => console.log("Sign out clicked")}
+            onClick={handleSignout}
           >
             <LogOut className="w-6 h-6" />
             Sign out
@@ -37,7 +42,7 @@ export const SettingsDialog = ({ trigger }: SettingsDialogProps) => {
 
           <div className="h-px bg-white/10" />
 
-          <button 
+          <button
             className="w-full flex items-center gap-3 px-4 py-3 text-left text-lg font-semibold text-white/90 hover:bg-white/5 rounded-xl transition-colors"
             onClick={() => console.log("How to clicked")}
           >
@@ -45,7 +50,7 @@ export const SettingsDialog = ({ trigger }: SettingsDialogProps) => {
             How to
           </button>
 
-          <button 
+          <button
             className="w-full flex items-center gap-3 px-4 py-3 text-left text-lg font-semibold text-white/90 hover:bg-white/5 rounded-xl transition-colors"
             onClick={() => console.log("Support clicked")}
           >
@@ -55,14 +60,14 @@ export const SettingsDialog = ({ trigger }: SettingsDialogProps) => {
 
           <div className="h-px bg-white/10" />
 
-          <button 
+          <button
             className="w-full flex items-center justify-center px-4 py-3 text-left text-base text-white/50 hover:bg-white/5 rounded-xl transition-colors"
             onClick={() => console.log("Terms clicked")}
           >
             Terms of use
           </button>
 
-          <button 
+          <button
             className="w-full flex items-center justify-center px-4 py-3 text-left text-base text-white/50 hover:bg-white/5 rounded-xl transition-colors"
             onClick={() => console.log("Privacy clicked")}
           >

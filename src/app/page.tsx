@@ -9,7 +9,7 @@ import sdk, {
   type Context,
 } from "@farcaster/frame-sdk";
 import { useSession } from "next-auth/react"
-import { signIn, signOut, getCsrfToken } from "next-auth/react";
+import { signIn, getCsrfToken } from "next-auth/react";
 
 const coinNames = [
   "Zerebro", "AiXBT", "Quantum Pepe", "NeuroPad", "Sigma Inu",
@@ -61,8 +61,6 @@ const Index = () => {
   const [timeLeft, setTimeLeft] = useState(1440); // 24 hours in minutes
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
 
-  const [context, setContext] = useState<Context.FrameContext>();
-
   const { data: session, status } = useSession();
 
   const getNonce = useCallback(async () => {
@@ -73,18 +71,18 @@ const Index = () => {
 
   useEffect(() => {
     const load = async () => {
-      setContext(await sdk.context);
       sdk.actions.ready();
-      const result = await sdk.actions.signIn({
-        nonce: await getNonce(),
-      });
-      const response = await signIn("credentials", {
-        message: result.message,
-        signature: result.signature,
-        redirect: false,
-      });
-      console.log(result);
-      console.log(response);
+
+      if (status !== "authenticated") {
+        const result = await sdk.actions.signIn({
+          nonce: await getNonce(),
+        });
+        const response = await signIn("credentials", {
+          message: result.message,
+          signature: result.signature,
+          redirect: false,
+        });
+      }
     };
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);
@@ -147,8 +145,7 @@ const Index = () => {
           <div className="py-4 text-center">
             <div>
               <span className="text-white/70 text-lg flex items-center justify-center gap-2">
-                🏆<span className="text-white">🦙</span> PRIZE POOL <span className="text-white">🦙</span>🏆
-                <span>{JSON.stringify(context, null, 2)}</span>
+                🏆<span className="text-white">🦙</span>DAILY PRIZE POOL <span className="text-white">🦙</span>🏆
               </span>
               <div className="font-bold text-3xl text-white">
                 ${prizePool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

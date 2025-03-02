@@ -5,9 +5,16 @@ import { BottomNav } from "@/components/ui/bottom-nav";
 import { toast } from "@/hooks/use-toast";
 import { ImagePlus, Twitter, Share2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { createClient } from "@supabase/supabase-js";
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Launch = () => {
   const [loading, setLoading] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -16,6 +23,7 @@ const Launch = () => {
     name: "",
     ticker: "",
     image: null as File | null,
+    imageUrl: "",
   });
 
   useEffect(() => {
@@ -26,15 +34,67 @@ const Launch = () => {
     fileInputRef.current?.click();
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setFormData((prev) => ({ ...prev, image: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const file = e.target.files[0];
+        setUploadLoading(true);
+
+        // Set local preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // Generate a unique file name
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Upload to Supabase
+        const { data, error } = await supabase
+          .storage
+          .from('tokens')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase
+          .storage
+          .from('tokens')
+          .getPublicUrl(filePath, {
+            transform: {
+              width: 500,
+              height: 500,
+            }
+          });
+
+        // Update form with file and URL
+        setFormData((prev) => ({
+          ...prev,
+          image: file,
+          imageUrl: urlData.publicUrl
+        }));
+
+        toast({
+          description: "Image uploaded successfully.",
+        });
+      } catch (error) {
+        console.error("Error uploading image: ", error);
+        toast({
+          description: "Failed to upload image. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setUploadLoading(false);
+      }
     }
   };
 
@@ -51,24 +111,30 @@ const Launch = () => {
     setShowShareModal(false);
   };
 
-  const isFormValid = formData.name && formData.ticker && formData.image;
+  const isFormValid = formData.name && formData.ticker && formData.imageUrl;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await fetch('/api/create-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Authorization: `Bearer ${accessToken}`,
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-      }),
-    });
-
     try {
+      const result = await fetch('/api/create-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: formData.name,
+          ticker: formData.ticker,
+          imageUrl: formData.imageUrl,
+        }),
+      });
+
+      if (!result.ok) {
+        throw new Error('Failed to create token');
+      }
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
       toast({
         description: "Your token has been launched successfully.",
@@ -130,6 +196,11 @@ const Launch = () => {
                       className="relative w-32 h-32 rounded-full overflow-hidden border border-white/10 group cursor-pointer"
                       onClick={handleImageClick}
                     >
+                      {uploadLoading ? (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
+                        </div>
+                      ) : null}
                       <img
                         src={imagePreview}
                         alt="Token preview"
@@ -145,8 +216,14 @@ const Launch = () => {
                       onClick={handleImageClick}
                       className="w-32 h-32 rounded-full border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/50 hover:text-white hover:border-white/30 transition-colors"
                     >
-                      <ImagePlus className="w-8 h-8" />
-                      <span className="text-sm font-['Outfit']">Upload Image</span>
+                      {uploadLoading ? (
+                        <div className="w-8 h-8 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <ImagePlus className="w-8 h-8" />
+                          <span className="text-sm font-['Outfit']">Upload Image</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
@@ -154,7 +231,7 @@ const Launch = () => {
 
               <button
                 type="submit"
-                disabled={loading || !isFormValid}
+                disabled={loading || uploadLoading || !isFormValid}
                 className="w-full bg-[#E5DEFF] hover:bg-[#E5DEFF]/90 disabled:opacity-50 disabled:hover:bg-[#E5DEFF] text-[#111111] rounded-xl px-6 py-2.5 font-medium transition-all duration-200 font-['Outfit']"
               >
                 {loading ? "Launching..." : "Launch Token"}

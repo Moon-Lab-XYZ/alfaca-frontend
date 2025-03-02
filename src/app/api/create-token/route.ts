@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next"
 import { authOptions } from '@/auth'; // Define auth options in your app
 import { ethers } from "ethers";
@@ -9,15 +9,21 @@ const DEPLOYER_ADDRESS = "0x08F832Fe5763A21a5BDcc04388e29D6b8Cccf469";
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
-const clankerContract = new ethers.Contract(process.env.CLANKER_CONTRACT as string, ALFACA_ABI, wallet);
+const alfacaContract = new ethers.Contract(process.env.ALFACA_CONTRACT as string, ALFACA_ABI, wallet);
 
 export async function POST(request: NextRequest) {
-  console.log("🔹 Creating Token...");
-
   const session = await getServerSession(authOptions);
   console.log("🔹 Session:", session);
 
-  const tx = await clankerContract.toggleAllowedPairedToken(WETH_ADDRESS, true);
+  if (!session) {
+    return NextResponse.json({ message: "❌ Unauthorized"}, { status: 401 });
+  }
+
+  const params = await request.json();
+  console.log("🔹 Request Params:", params);
+  console.log("🔹 Creating Token...");
+
+  const tx = await alfacaContract.toggleAllowedPairedToken(WETH_ADDRESS, true);
   console.log("🔹 Transaction sent, waiting for confirmation...", tx.hash);
   await tx.wait();
   console.log("✅ WETH allowed as paired token");
@@ -27,12 +33,12 @@ export async function POST(request: NextRequest) {
     DEPLOYER_ADDRESS,
     CONTRACT_BYTECODE as string, // Load from .env or JSON file
     ["Test", "TT", 100000000000, DEPLOYER_ADDRESS, 1297, "", ""],
-    process.env.CLANKER_CONTRACT as string,
+    process.env.ALFACA_CONTRACT as string,
     WETH_ADDRESS
   );
 
   if (!optimalSalt) {
-    return Response.json({ success: false, message: "❌ No optimal salt found" });
+    return Response.json({ message: "❌ No optimal salt found" }, { status: 400});
   }
 
   console.log("✅ Using optimal salt:", optimalSalt);
@@ -68,11 +74,6 @@ export async function POST(request: NextRequest) {
     tokenAddress: result.tokenAddress
   });
 }
-
-// ABI (Minimal ABI with deployToken function)
-const CLANKER_ABI = [
-  "function deployToken(string _name, string _symbol, uint256 _supply, uint24 _fee, bytes32 _salt, address _deployer, uint256 _fid, string _image, string _castHash, tuple(int24 tick, address pairedToken, uint24 devBuyFee) _poolConfig) external payable returns (address token, uint256 positionId)"
-];
 
 interface PoolConfig {
   tick: number;
@@ -158,9 +159,9 @@ async function deployToken({
     const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
 
     // Connect to the contract
-    const clankerContract = new ethers.Contract(
-      process.env.CLANKER_CONTRACT as string,
-      CLANKER_ABI,
+    const alfacaContract = new ethers.Contract(
+      process.env.ALFACA_CONTRACT as string,
+      ALFACA_ABI,
       wallet
     );
 
@@ -178,7 +179,7 @@ async function deployToken({
     });
 
     // Prepare transaction
-    const tx = await clankerContract.deployToken(
+    const tx = await alfacaContract.deployToken(
       name,
       symbol,
       supply,
