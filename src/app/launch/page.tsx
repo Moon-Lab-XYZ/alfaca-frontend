@@ -126,7 +126,7 @@ const Launch = () => {
         credentials: 'include',
         body: JSON.stringify({
           name: formData.name,
-          ticker: formData.ticker,
+          symbol: formData.ticker,
           imageUrl: formData.imageUrl,
         }),
       });

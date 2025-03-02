@@ -28,11 +28,20 @@ export async function POST(request: NextRequest) {
   await tx.wait();
   console.log("✅ WETH allowed as paired token");
 
+  const tokenName = params.name;
+  const tokenSymbol = params.symbol;
+  const tokenImageUrl = params.imageUrl;
+  const tokenSupply = BigInt(100_000_000_000) * BigInt(10) ** BigInt(18);
+  const tokenFee = 10000; // 1% fee
+  const tokenDevBuyFee = 1000; // 0.1% fee
+  const tokenPoolTick = -230200; // Default pool tick
+  const tokenCreatorFid = session.user.fid;
+
   // Find an optimal salt
   const optimalSalt = await findOptimalSalt(
     DEPLOYER_ADDRESS,
-    CONTRACT_BYTECODE as string, // Load from .env or JSON file
-    ["Test", "TT", 100000000000, DEPLOYER_ADDRESS, 1297, "", ""],
+    CONTRACT_BYTECODE as string,
+    [tokenName, tokenSymbol, tokenSupply, DEPLOYER_ADDRESS, tokenCreatorFid ? tokenCreatorFid : 0, tokenImageUrl, ""],
     process.env.ALFACA_CONTRACT as string,
     WETH_ADDRESS
   );
@@ -45,19 +54,19 @@ export async function POST(request: NextRequest) {
 
   // Deploy the token with the optimal salt
   const result = await deployToken({
-    name: "Test",
-    symbol: "TT",
-    supply: 100000000000,
-    fee: 10000,
+    name: tokenName,
+    symbol: tokenSymbol,
+    supply: tokenSupply,
+    fee: tokenFee,
     salt: optimalSalt,
     deployer: DEPLOYER_ADDRESS,
-    fid: 1297,
-    image: "",
+    fid: tokenCreatorFid ? tokenCreatorFid : 0,
+    image: tokenImageUrl,
     castHash: "",
     poolConfig: {
-      tick: -230200,
+      tick: tokenPoolTick,
       pairedToken: WETH_ADDRESS,
-      devBuyFee: 1000
+      devBuyFee: tokenDevBuyFee
     },
   });
 
@@ -84,7 +93,7 @@ interface PoolConfig {
 interface DeployTokenParams {
   name: string;
   symbol: string;
-  supply: number;
+  supply: bigint;
   fee: number;
   salt: string;
   deployer: string;
@@ -119,7 +128,6 @@ async function findOptimalSalt(deployerAddress: any, contractBytecode: any, cons
       constructorArgs
     );
 
-    // This part looks correct, matching abi.encodePacked in Solidity
     const bytecodeHash = ethers.keccak256(
       ethers.concat([contractBytecode, encodedArgs])
     );
