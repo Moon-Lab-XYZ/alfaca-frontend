@@ -10,6 +10,8 @@ import sdk, {
 } from "@farcaster/frame-sdk";
 import { useState, useEffect, useCallback } from "react";
 import { signIn, getCsrfToken } from "next-auth/react";
+import { useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
 
 const mockUserCoins = [
   {
@@ -102,26 +104,37 @@ const Profile = () => {
     return nonce;
   }, []);
 
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
-    const load = async () => {
-      sdk.actions.ready();
+  const load = async () => {
+    sdk.actions.ready();
 
-      if (status !== "authenticated") {
-        const result = await sdk.actions.signIn({
-          nonce: await getNonce(),
-        });
-        const response = await signIn("credentials", {
-          message: result.message,
-          signature: result.signature,
-          redirect: false,
-        });
-      }
-    };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
-      load();
+    if (status !== "authenticated") {
+      await authenticate();
     }
+  };
+
+  const authenticate = async () => {
+    try {
+      const result = await sdk.actions.signIn({
+        nonce: await getNonce(),
+      });
+      const response = await signIn("credentials", {
+        message: result.message,
+        signature: result.signature,
+        redirect: false,
+      });
+    } catch (e) {
+      console.log("Failed to authenticate: ", e);
+      if (router) router.push("/");
+    }
+  }
+  if (sdk && !isSDKLoaded) {
+    setIsSDKLoaded(true);
+    load();
+  }
   }, [isSDKLoaded]);
 
   useEffect(() => {

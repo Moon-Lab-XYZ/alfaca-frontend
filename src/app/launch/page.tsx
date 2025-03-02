@@ -9,6 +9,8 @@ import { createClient } from "@supabase/supabase-js";
 import { signIn, getCsrfToken } from "next-auth/react";
 import sdk, {
 } from "@farcaster/frame-sdk";
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -30,6 +32,8 @@ const Launch = () => {
   });
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
 
+  const router = useRouter();
+
   useEffect(() => {
     nameInputRef.current?.focus();
   }, []);
@@ -40,12 +44,19 @@ const Launch = () => {
     return nonce;
   }, []);
 
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     const load = async () => {
       sdk.actions.ready();
 
       if (status !== "authenticated") {
+        await authenticate();
+      }
+    };
+
+    const authenticate = async () => {
+      try {
         const result = await sdk.actions.signIn({
           nonce: await getNonce(),
         });
@@ -54,8 +65,11 @@ const Launch = () => {
           signature: result.signature,
           redirect: false,
         });
+      } catch (e) {
+        console.log("Failed to authenticate: ", e);
+        if (router) router.push("/");
       }
-    };
+    }
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);
       load();
