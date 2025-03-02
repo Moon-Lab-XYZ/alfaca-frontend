@@ -78,12 +78,13 @@ const Index = () => {
       const result = await sdk.actions.signIn({
         nonce: await getNonce(),
       });
-      await signIn("credentials", {
+      const response = await signIn("credentials", {
         message: result.message,
         signature: result.signature,
         redirect: false,
       });
       console.log(result);
+      console.log(response);
     };
     if (sdk && !isSDKLoaded) {
       setIsSDKLoaded(true);
