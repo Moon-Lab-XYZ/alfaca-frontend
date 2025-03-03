@@ -25,14 +25,14 @@ const pastelGradients = [
   "linear-gradient(to right, #84fab0 0%, #8fd3f4 100%)",
 ];
 
-export const ProfileCoinCard = ({ 
-  name, 
-  ticker, 
-  image, 
+export const ProfileCoinCard = ({
+  name,
+  ticker,
+  image,
   volume24h,
 }: ProfileCoinCardProps) => {
   const { toast } = useToast();
-  
+
   const formatVolume = (volume: number) => {
     if (volume >= 1000000000) {
       return `$${(volume / 1000000000).toFixed(1)}B`;
@@ -69,7 +69,7 @@ export const ProfileCoinCard = ({
   return (
     <div className="bg-[#1A1A1A] rounded-2xl p-4">
       <div className="flex items-start gap-4">
-        <div 
+        <div
           className="w-12 h-12 rounded-xl overflow-hidden border border-white/10"
           style={{ background: getGradient() }}
         >
@@ -95,10 +95,10 @@ export const ProfileCoinCard = ({
               <p className="text-lg font-semibold text-[#00FF03]">
                 {formatVolume(volume24h)}
               </p>
-              <p className="text-sm text-white/50">24h Volume</p>
+              <p className="text-sm text-white/50">Last 24h Volume</p>
             </div>
           </div>
-          
+
           <div className="flex gap-2 mt-3">
             <button
               onClick={handleCopyAddress}

@@ -1,12 +1,26 @@
 import { AuthOptions, getServerSession } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createAppClient, viemConnector } from "@farcaster/auth-client";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_KEY as string
+);
+
+const IMG_BASE_URL="https://wrpcd.net/cdn-cgi/image/anim=false,fit=contain,f=auto,w=336";
 
 declare module "next-auth" {
   interface Session {
     user: {
       fid: number;
+      uid: number;
     };
+  }
+
+  interface User {
+    id: string;
+    uid: string;
   }
 }
 
@@ -26,22 +40,8 @@ export const authOptions: AuthOptions = {
           type: "text",
           placeholder: "0x0",
         },
-        // In a production app with a server, these should be fetched from
-        // your Farcaster data indexer rather than have them accepted as part
-        // of credentials.
-        name: {
-          label: "Name",
-          type: "text",
-          placeholder: "0x0",
-        },
-        pfp: {
-          label: "Pfp",
-          type: "text",
-          placeholder: "0x0",
-        },
       },
       async authorize(credentials, req) {
-        console.log('authorize');
         const csrfToken = req?.body?.csrfToken;
         const appClient = createAppClient({
           ethereum: viemConnector(),
@@ -59,16 +59,79 @@ export const authOptions: AuthOptions = {
           return null;
         }
 
+        let userId: number | undefined = undefined;
+
+        const { data: userExists, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('farcaster_id', fid)
+          .limit(1)
+          .single();
+
+        if (error || !userExists) {
+          const userResponse = await fetch(
+            `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fid}`,
+            {
+              headers: {
+                api_key: process.env.NEYNAR_API_KEY,
+                accept: 'application/json',
+                'content-type': 'application/json',
+              } as HeadersInit,
+              method: 'GET',
+            }
+          );
+          const userData = (await userResponse.json()).users?.[0];
+
+          if (userData) {
+            const {data: createdUser, error} = await supabase
+              .from('users')
+              .insert([
+                {
+                  name: userData.display_name,
+                  farcaster_username: userData.username,
+                  farcaster_id: fid,
+                  avatar_url: userData.pfp_url
+                    ? `${IMG_BASE_URL}/${encodeURIComponent(
+                        userData.pfp_url
+                      )}`
+                    : null,
+                  custody_address: userData.custody_address,
+                  verified_addresses: userData.verified_addresses.eth_addresses,
+                  verified_accounts: userData.verified_accounts,
+                },
+              ])
+              .select('*')
+              .single();
+            if (error) console.log(error);
+
+            if (createdUser) {
+              userId = createdUser.id as number;
+            }
+            console.log(createdUser);
+          }
+        } else {
+          // User exists, use its ID
+          userId = userExists.id as number;
+        }
+
         return {
           id: fid.toString(),
+          uid: userId !== undefined ? userId.toString() : '',
         };
       },
     }),
   ],
   callbacks: {
+    jwt({ token, user }) {
+      if (user) {
+        return { ...token, id: user.id, uid: user.uid }; // Save id to token as docs says: https://next-auth.js.org/configuration/callbacks
+      }
+      return token;
+    },
     session: async ({ session, token }) => {
       if (session?.user) {
         session.user.fid = parseInt(token.sub ?? '');
+        session.user.uid = parseInt(token.uid as string);
       }
       return session;
     },

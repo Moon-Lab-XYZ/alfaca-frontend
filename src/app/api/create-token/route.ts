@@ -11,6 +11,15 @@ const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
 const alfacaContract = new ethers.Contract(process.env.ALFACA_CONTRACT as string, ALFACA_ABI, wallet);
 
+const DEX_SCREENER_BASE_URL = "https://dexscreener.com/base/";
+
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_KEY as string
+);
+
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   console.log("🔹 Session:", session);
@@ -58,7 +67,7 @@ export async function POST(request: NextRequest) {
     symbol: tokenSymbol,
     supply: tokenSupply,
     fee: tokenFee,
-    salt: optimalSalt,
+    salt: optimalSalt.salt,
     deployer: DEPLOYER_ADDRESS,
     fid: tokenCreatorFid ? tokenCreatorFid : 0,
     image: tokenImageUrl,
@@ -77,10 +86,22 @@ export async function POST(request: NextRequest) {
   // Log transaction hash and deployed token address
   console.log("✅ Token deployed successfully!", result);
 
+  await supabase.from("tokens").insert([
+    {
+      name: tokenName,
+      symbol: tokenSymbol,
+      creator: session.user.uid,
+      image: tokenImageUrl,
+      link: `${DEX_SCREENER_BASE_URL}${optimalSalt.predictedAddress}`,
+      contract_address: optimalSalt.predictedAddress,
+      txn_hash: result.hash,
+    }
+  ])
+
   return Response.json({
     success: true,
-    transactionHash: result.transactionHash,
-    tokenAddress: result.tokenAddress
+    transactionHash: result.hash,
+    tokenAddress: optimalSalt.predictedAddress
   });
 }
 
@@ -140,7 +161,10 @@ async function findOptimalSalt(deployerAddress: any, contractBytecode: any, cons
       console.log("✅ Found optimal salt:", salt);
       console.log("✅ Matching Address:", predictedAddress);
       console.log("✅ WETH Address:", wethAddress);
-      return salt;
+      return {
+        salt: salt,
+        predictedAddress: predictedAddress
+      };
     }
   }
   return null;

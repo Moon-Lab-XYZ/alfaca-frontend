@@ -25,66 +25,6 @@ const mockUserCoins = [
       username: "you",
       image: "https://via.placeholder.com/150"
     }
-  },
-  {
-    name: "Super Token",
-    ticker: "STKN",
-    image: "https://via.placeholder.com/150",
-    timestamp: "2 days ago",
-    volume24h: 95000,
-    rank: 10,
-    creator: {
-      username: "you",
-      image: "https://via.placeholder.com/150"
-    }
-  },
-  {
-    name: "Mega Token",
-    ticker: "MEGA",
-    image: "https://via.placeholder.com/150",
-    timestamp: "3 days ago",
-    volume24h: 82000,
-    rank: 12,
-    creator: {
-      username: "you",
-      image: "https://via.placeholder.com/150"
-    }
-  },
-  {
-    name: "Ultra Token",
-    ticker: "ULTRA",
-    image: "https://via.placeholder.com/150",
-    timestamp: "4 days ago",
-    volume24h: 71000,
-    rank: 15,
-    creator: {
-      username: "you",
-      image: "https://via.placeholder.com/150"
-    }
-  },
-  {
-    name: "Power Token",
-    ticker: "PWR",
-    image: "https://via.placeholder.com/150",
-    timestamp: "5 days ago",
-    volume24h: 65000,
-    rank: 18,
-    creator: {
-      username: "you",
-      image: "https://via.placeholder.com/150"
-    }
-  },
-  {
-    name: "Hyper Token",
-    ticker: "HYPR",
-    image: "https://via.placeholder.com/150",
-    timestamp: "6 days ago",
-    volume24h: 52000,
-    rank: 20,
-    creator: {
-      username: "you",
-      image: "https://via.placeholder.com/150"
-    }
   }
 ];
 
@@ -93,7 +33,7 @@ const Profile = () => {
   const creatorGradient = pastelGradients[0];
 
   // Mock data for earnings
-  const totalEarnings = 892450.75;
+  const totalEarnings = 0;
 
   const [user, setUser] = useState<any>(null);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);

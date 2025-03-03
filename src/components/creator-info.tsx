@@ -41,7 +41,7 @@ export const CreatorInfo = ({
         </span>
         <div className="flex items-center gap-1.5">
           <span className="text-sm text-[#00FF03]">{formatVolume(volume24h)}</span>
-          <span className="text-sm text-white/50">Total 24h Vol</span>
+          <span className="text-sm text-white/50">Last 24h Vol</span>
         </div>
       </div>
     </div>

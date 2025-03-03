@@ -120,7 +120,7 @@ export const CoinCard = ({
           onClick={handleCreatorClick}
         />
 
-        <button
+        {/* <button
           onClick={handleSubscribe}
           className={`p-2.5 rounded-xl transition-all duration-200 ${
             isSubscribed
@@ -129,7 +129,7 @@ export const CoinCard = ({
           }`}
         >
           <Bell className="w-5 h-5" strokeWidth={2} />
-        </button>
+        </button> */}
       </div>
 
       {creator.otherCoins && creator.otherCoins.length > 0 && (

@@ -11,6 +11,8 @@ import sdk, {
 } from "@farcaster/frame-sdk";
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation";
+import useUser from "@/lib/user";
+import { mutate } from "swr";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -45,6 +47,7 @@ const Launch = () => {
   }, []);
 
   const { data: session, status } = useSession();
+  const { data: user } = useUser();
 
   useEffect(() => {
     const load = async () => {
@@ -161,6 +164,8 @@ const Launch = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) return;
     setLoading(true);
 
     try {
@@ -181,16 +186,10 @@ const Launch = () => {
         throw new Error('Failed to create token');
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      toast({
-        description: "Your token has been launched successfully.",
-      });
-      setShowShareModal(true);
+      router.push('/profile');
+      mutate('userTokens');
     } catch (error) {
-      toast({
-        description: "Failed to launch token. Please try again.",
-        variant: "destructive",
-      });
+      console.error("Error creating token: ", error);
     } finally {
       setLoading(false);
     }
@@ -212,11 +211,12 @@ const Launch = () => {
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-[#E5DEFF] transition-colors font-['Outfit']"
                   placeholder="Enter token name"
                   required
+                  disabled={loading}
                 />
               </div>
 
               <div>
-                <label className="text-white text-sm font-medium font-['Outfit']">Ticker Symbol</label>
+                <label className="text-white text-sm font-medium font-['Outfit']">Token Ticker</label>
                 <input
                   type="text"
                   value={formData.ticker}
@@ -224,6 +224,7 @@ const Launch = () => {
                   className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-[#E5DEFF] transition-colors font-['Outfit']"
                   placeholder="Enter ticker (e.g. BTC)"
                   required
+                  disabled={loading}
                 />
               </div>
 
@@ -235,6 +236,7 @@ const Launch = () => {
                   onChange={handleImageChange}
                   accept="image/*"
                   className="hidden"
+                  disabled={loading}
                 />
                 <div className="flex items-center justify-center mt-1">
                   {imagePreview ? (
@@ -261,6 +263,7 @@ const Launch = () => {
                       type="button"
                       onClick={handleImageClick}
                       className="w-32 h-32 rounded-full border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/50 hover:text-white hover:border-white/30 transition-colors"
+                      disabled={loading}
                     >
                       {uploadLoading ? (
                         <div className="w-8 h-8 border-2 border-white/30 border-t-white/80 rounded-full animate-spin"></div>
