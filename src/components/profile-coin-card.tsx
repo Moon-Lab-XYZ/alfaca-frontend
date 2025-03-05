@@ -8,6 +8,8 @@ interface ProfileCoinCardProps {
   ticker: string;
   image: string;
   volume24h: number;
+  contractAddress: string;
+  dexScreenerLink: string;
 }
 
 const pastelGradients = [
@@ -30,6 +32,8 @@ export const ProfileCoinCard = ({
   ticker,
   image,
   volume24h,
+  contractAddress,
+  dexScreenerLink,
 }: ProfileCoinCardProps) => {
   const { toast } = useToast();
 
@@ -53,8 +57,7 @@ export const ProfileCoinCard = ({
 
   const handleCopyAddress = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const address = "0x4455...cAD7";
-    navigator.clipboard.writeText(address);
+    navigator.clipboard.writeText(contractAddress);
     toast({
       description: "Contract address copied to clipboard",
       duration: 2000,
@@ -63,7 +66,7 @@ export const ProfileCoinCard = ({
 
   const handleDexScreener = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`https://dexscreener.com/ethereum/${ticker.toLowerCase()}`, '_blank');
+    window.open(dexScreenerLink, '_blank');
   };
 
   return (
@@ -104,7 +107,7 @@ export const ProfileCoinCard = ({
               onClick={handleCopyAddress}
               className="flex items-center justify-center gap-1.5 bg-black/40 rounded-lg py-1.5 px-3 text-xs text-white/70 hover:text-white hover:bg-black/60 transition-colors"
             >
-              <Copy size={14} /> 0x4455...cAD7
+              <Copy size={14} /> {contractAddress.slice(0, 5)}...{contractAddress.slice(-4)}
             </button>
             <button
               onClick={handleDexScreener}

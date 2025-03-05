@@ -12,30 +12,23 @@ import { useState, useEffect, useCallback } from "react";
 import { signIn, getCsrfToken } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
+import { createClient } from "@supabase/supabase-js";
+import useSWR from "swr";
+import useUser from "@/lib/user";
 
-const mockUserCoins = [
-  {
-    name: "My Token",
-    ticker: "MTK",
-    image: "https://via.placeholder.com/150",
-    timestamp: "1 day ago",
-    volume24h: 125000,
-    rank: 8,
-    creator: {
-      username: "you",
-      image: "https://via.placeholder.com/150"
-    }
-  }
-];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+);
 
 const Profile = () => {
-  const totalVolume = mockUserCoins.reduce((sum, coin) => sum + coin.volume24h, 0);
+  const totalVolume = 0;
   const creatorGradient = pastelGradients[0];
 
   // Mock data for earnings
   const totalEarnings = 0;
 
-  const [user, setUser] = useState<any>(null);
+  const [userContext, setUserContext] = useState<any>(null);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
 
   const getNonce = useCallback(async () => {
@@ -46,6 +39,36 @@ const Profile = () => {
 
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { data: user } = useUser();
+
+  const {
+    data: tokenData,
+    error,
+    mutate: mutateUserTokens,
+    isLoading,
+  } = useSWR(`userTokens`, async () => {
+    try {
+      if (!user) return;
+      const { data: userTokens, error } = await supabase
+        .from('tokens')
+        .select('*')
+        .eq('creator', user.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (!userTokens) {
+        return [];
+      }
+      console.log(userTokens);
+      return userTokens;
+    } catch (error) {
+      console.error('Error fetching user tokens', error);
+    }
+  });
+
+  useEffect(() => {
+    if (user) mutateUserTokens();
+  }, [user])
+
 
   useEffect(() => {
   const load = async () => {
@@ -80,7 +103,7 @@ const Profile = () => {
   useEffect(() => {
     async function setContext() {
       const user = (await sdk.context).user;
-      setUser(user);
+      setUserContext(user);
       console.log(user);
     }
 
@@ -94,9 +117,9 @@ const Profile = () => {
       <div className="max-w-md mx-auto px-4 pt-6">
         <div className="flex items-center justify-between mb-6">
           <CreatorInfo
-            username={user ? user.username : "you"}
-            image={user ? user.pfpUrl: "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
-            volume24h={totalVolume}
+            username={userContext ? userContext.username : "you"}
+            image={userContext ? userContext.pfpUrl: "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
+            volume24h={user?.user ? user.user.total_txn_vol_last_24h : 0}
             gradient={creatorGradient}
             rank={8}
             onClick={() => {}}
@@ -118,15 +141,27 @@ const Profile = () => {
         </div>
 
         <div className="space-y-4 pb-12">
-          {mockUserCoins.map((coin, index) => (
-            <ProfileCoinCard
-              key={index}
-              name={coin.name}
-              ticker={coin.ticker}
-              image={coin.image}
-              volume24h={coin.volume24h}
-            />
-          ))}
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-10 h-10 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin mb-2"></div>
+            </div>
+          ) : tokenData && tokenData.length > 0 ? (
+            tokenData.map((token, index) => (
+              <ProfileCoinCard
+                key={index}
+                name={token.name}
+                ticker={token.symbol}
+                image={token.image}
+                volume24h={token.txn_vol_last_24h ? token.txn_vol_last_24h : 0}
+                contractAddress={token.contract_address}
+                dexScreenerLink={token.link}
+              />
+            ))
+          ) : (
+            <div className="text-center py-6 text-white/70">
+              No tokens created
+            </div>
+          )}
         </div>
       </div>
       <BottomNav />

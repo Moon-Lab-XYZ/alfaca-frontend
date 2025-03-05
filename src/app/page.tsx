@@ -10,56 +10,59 @@ import sdk, {
 } from "@farcaster/frame-sdk";
 import { useSession } from "next-auth/react"
 import { signIn, getCsrfToken } from "next-auth/react";
+import useSWR from "swr";
+import { createClient } from "@supabase/supabase-js";
 
-const coinNames = [
-  "Zerebro", "AiXBT", "Quantum Pepe", "NeuroPad", "Sigma Inu",
-  "Binary Doge", "AlphaCore", "NexusBrain", "CyberShiba", "MetaLlama",
-  "AstroApe", "CosmoSmart", "NeuralX", "OmegaBot", "SynthPad",
-  "QuantumLeap", "BrainDAO", "CryptoNova", "AiMatrix", "NeuroBit",
-  "TeraCore", "VortexAI", "SynapseX", "ByteLabs"
-];
-
-const generateMockCoins = (count: number) => {
-  return Array.from({ length: count }, (_, i) => ({
-    name: coinNames[i],
-    ticker: coinNames[i].replace(/\s+/g, '').toUpperCase(),
-    image: "https://via.placeholder.com/150",
-    timestamp: "3 coins created",
-    volume24h: Math.floor(Math.random() * 2000000) + 500000,
-    rank: i + 1,
-    creator: {
-      username: `creator${i + 1}`,
-      image: "https://via.placeholder.com/150",
-      otherCoins: [
-        {
-          name: `${coinNames[i]}X`,
-          ticker: `${coinNames[i].replace(/\s+/g, '')}X`,
-          image: "https://via.placeholder.com/150",
-          volume24h: 850000
-        },
-        {
-          name: `${coinNames[i]}Pro`,
-          ticker: `${coinNames[i].replace(/\s+/g, '')}PRO`,
-          image: "https://via.placeholder.com/150",
-          volume24h: 420000
-        },
-        {
-          name: `${coinNames[i]}AI`,
-          ticker: `${coinNames[i].replace(/\s+/g, '')}AI`,
-          image: "https://via.placeholder.com/150",
-          volume24h: 230000
-        }
-      ]
-    }
-  }));
-};
-
-const mockCoins = generateMockCoins(24);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+);
 
 const Index = () => {
-  const [prizePool, setPrizePool] = useState(126389.37);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+
+  const {
+    data: currentRound,
+    error,
+    mutate: mutateCurrentRound,
+    isLoading,
+  } = useSWR(`currentRound`, async () => {
+    try {
+      const nextRoundEndTime = (getNextRoundEndTime()).toISOString();
+      const { data: currentRound } = await supabase.from('rounds')
+        .select('*')
+        .eq('round_end_time', nextRoundEndTime)
+        .limit(1)
+        .single();
+      return currentRound;
+    } catch (error) {
+      console.error('Error fetching user tokens', error);
+    }
+  });
+
+  // update currentRound every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      mutateCurrentRound();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const {
+    data: leaderboard,
+    error: leaderboardError,
+    mutate: mutateLeaderboard,
+    isLoading: leaderboardLoading,
+  } = useSWR(`leaderboard`, async () => {
+    try {
+      const { data: leaderboard, error } = await supabase.rpc('get_top_users_and_tokens');
+      if (error) console.error(error);
+      return leaderboard;
+    } catch (error) {
+      console.error('Error fetching leaderboard', error);
+    }
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -71,40 +74,33 @@ const Index = () => {
     }
   }, [isSDKLoaded]);
 
-  useEffect(() => {
-    const prizeInterval = setInterval(() => {
-      setPrizePool(current => {
-        const increase = Math.random() * 0.5 + 0.1;
-        return Number((current + increase).toFixed(2));
-      });
-    }, 1000);
+  function getNextRoundEndTime() {
+    const now = new Date();
+    const options = { timeZone: 'America/Los_Angeles' };
+    const pacificTimeNow = new Date(now.toLocaleString('en-US', options));
 
-    return () => clearInterval(prizeInterval);
-  }, []);
+    // Create a date object for 4PM Pacific Time today
+    const targetDate = new Date(pacificTimeNow);
+    targetDate.setHours(16, 0, 0, 0); // Set to 4PM PT
+
+    // If current Pacific Time is past 4PM PT, set target to next day
+    if (pacificTimeNow > targetDate) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+
+    // Convert the PT target time back to the local time of the device
+    const targetInLocalTime = new Date(targetDate.toLocaleString('en-US'));
+
+    return targetInLocalTime
+  }
 
   useEffect(() => {
     const calculateTimeUntil4PMPT = () => {
       const now = new Date();
-
-      // Get current date in PT (Pacific Time)
-      // Note: This correctly accounts for DST by using standard IANA timezone names
-      const options = { timeZone: 'America/Los_Angeles' };
-      const pacificTimeNow = new Date(now.toLocaleString('en-US', options));
-
-      // Create a date object for 4PM Pacific Time today
-      const targetDate = new Date(pacificTimeNow);
-      targetDate.setHours(16, 0, 0, 0); // Set to 4PM PT
-
-      // If current Pacific Time is past 4PM PT, set target to next day
-      if (pacificTimeNow > targetDate) {
-        targetDate.setDate(targetDate.getDate() + 1);
-      }
-
-      // Convert the PT target time back to the local time of the device
-      const targetInLocalTime = new Date(targetDate.toLocaleString('en-US'));
+      const nextRoundEndTime = getNextRoundEndTime();
 
       // Calculate the difference in milliseconds
-      const diff = targetInLocalTime.getTime() - now.getTime();
+      const diff = nextRoundEndTime.getTime() - now.getTime();
 
       // Convert to hours, minutes, seconds
       const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -148,7 +144,7 @@ const Index = () => {
                 🏆<span className="text-white">🦙</span>DAILY PRIZE POOL <span className="text-white">🦙</span>🏆
               </span>
               <div className="font-bold text-3xl text-white">
-                ${prizePool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${currentRound ? currentRound.prize_pool_amount_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 0}
               </div>
               <div className="text-md text-white/50 mt-1 flex items-center justify-center gap-0.5">
                 {formatTime(timeLeft)}
@@ -159,9 +155,9 @@ const Index = () => {
       </div>
 
       <div className="max-w-md mx-auto px-4 mt-4 space-y-3 pb-12">
-        {mockCoins.map((coin, index) => (
+        {leaderboard ? leaderboard.map((coin: any, index: any) => (
           <CoinCard key={index} {...coin} />
-        ))}
+        )) : null}
       </div>
       <BottomNav />
     </div>

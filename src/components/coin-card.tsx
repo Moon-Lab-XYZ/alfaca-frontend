@@ -8,37 +8,26 @@ import { OtherCoinsButton } from "./other-coins-button";
 import { pastelGradients } from "@/lib/coin-card-utils";
 
 interface CoinCardProps {
-  name: string;
-  ticker: string;
-  image: string;
-  timestamp: string;
-  volume24h: number;
-  rank: number;
-  creator: {
-    username: string;
-    image: string;
-    otherCoins?: Array<{
-      name: string;
-      ticker: string;
-      image: string;
-      volume24h: number;
-    }>;
-  };
+  user_id: number;
+  user_name: string;
+  farcaster_username: string;
+  avatar_url: string;
+  total_txn_vol_last_24h: number;
+  token_count: number;
+  tokens: any;
   simplified?: boolean;
+  rank: number;
 }
 
 export const CoinCard = ({
-  name,
-  ticker,
-  image,
-  timestamp,
-  volume24h,
+  user_id,
+  user_name,
+  farcaster_username,
+  avatar_url,
+  total_txn_vol_last_24h,
+  token_count,
+  tokens,
   rank,
-  creator = {
-    username: "anonymous",
-    image: "https://via.placeholder.com/150",
-    otherCoins: []
-  },
   simplified = false
 }: CoinCardProps) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -61,40 +50,24 @@ export const CoinCard = ({
     setIsSubscribed(!isSubscribed);
     toast({
       description: isSubscribed
-        ? `Unsubscribed from ${creator.username}`
-        : `Subscribed to ${creator.username}`,
+        ? `Unsubscribed from ${farcaster_username}`
+        : `Subscribed to ${farcaster_username}`,
       duration: 2000,
     });
   };
 
   const handleClick = () => {
-    router.push(`/coin/${ticker.toLowerCase()}`);
+    // router.push(`/coin/${ticker.toLowerCase()}`);
   };
 
   const handleCreatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/user/${creator.username}`);
+    router.push(`/user/${user_id}`);
   };
 
   const handleCreatorCoinsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/user/${creator.username}`, {
-      // state: {
-      //   coins: [
-      //     {
-      //       name,
-      //       ticker,
-      //       image,
-      //       volume24h
-      //     },
-      //     ...(creator.otherCoins || []).map(coin => ({
-      //       name: coin.name,
-      //       ticker: coin.ticker,
-      //       image: coin.image,
-      //       volume24h: coin.volume24h
-      //     }))
-      //   ]
-      // }
+    router.push(`/user/${user_id}`, {
     });
   };
 
@@ -113,9 +86,9 @@ export const CoinCard = ({
         </div>
 
         <CreatorInfo
-          username={creator.username}
-          image={creator.image}
-          volume24h={volume24h}
+          username={farcaster_username}
+          image={avatar_url}
+          volume24h={total_txn_vol_last_24h}
           gradient={avatarGradient}
           onClick={handleCreatorClick}
         />
@@ -132,12 +105,12 @@ export const CoinCard = ({
         </button> */}
       </div>
 
-      {creator.otherCoins && creator.otherCoins.length > 0 && (
+      {tokens && tokens.length > 0 && (
         <OtherCoinsButton
-          ticker={ticker}
-          image={image}
+          ticker={tokens[0].symbol}
+          image={tokens[0].image}
           gradient={coinGradient}
-          coinsCount={creator.otherCoins.length}
+          coinsCount={token_count - 1}
           onClick={handleCreatorCoinsClick}
         />
       )}
