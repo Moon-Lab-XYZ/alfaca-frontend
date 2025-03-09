@@ -5,9 +5,8 @@ import { ethers } from "ethers";
 import { CONTRACT_BYTECODE } from "@/lib/alfacaContractByteCode";
 import { ALFACA_ABI } from "@/lib/abi/alfaca";
 
-const DEPLOYER_ADDRESS = "0x08F832Fe5763A21a5BDcc04388e29D6b8Cccf469";
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
 const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
 const alfacaContract = new ethers.Contract(process.env.ALFACA_CONTRACT as string, ALFACA_ABI, wallet);
 
@@ -45,12 +44,13 @@ export async function POST(request: NextRequest) {
   const tokenDevBuyFee = 1000; // 0.1% fee
   const tokenPoolTick = -230200; // Default pool tick
   const tokenCreatorFid = session.user.fid;
+  const tokenDeployer = session.user.userAddress;
 
   // Find an optimal salt
   const optimalSalt = await findOptimalSalt(
-    DEPLOYER_ADDRESS,
+    tokenDeployer,
     CONTRACT_BYTECODE as string,
-    [tokenName, tokenSymbol, tokenSupply, DEPLOYER_ADDRESS, tokenCreatorFid ? tokenCreatorFid : 0, tokenImageUrl, ""],
+    [tokenName, tokenSymbol, tokenSupply, tokenDeployer, tokenCreatorFid ? tokenCreatorFid : 0, tokenImageUrl, ""],
     process.env.ALFACA_CONTRACT as string,
     WETH_ADDRESS
   );
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     supply: tokenSupply,
     fee: tokenFee,
     salt: optimalSalt.salt,
-    deployer: DEPLOYER_ADDRESS,
+    deployer: tokenDeployer,
     fid: tokenCreatorFid ? tokenCreatorFid : 0,
     image: tokenImageUrl,
     castHash: "",
@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
       creator: session.user.uid,
       image: tokenImageUrl,
       link: `${DEX_SCREENER_BASE_URL}${optimalSalt.predictedAddress}`,
-      contract_address: optimalSalt.predictedAddress,
-      txn_hash: result.hash,
+      contract_address: optimalSalt.predictedAddress.toLowerCase(),
+      txn_hash: result.hash.toLowerCase(),
     }
   ])
 
@@ -186,7 +186,7 @@ async function deployToken({
 }: DeployTokenParams) {
   try {
     // Set up provider and wallet signer
-    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
     // const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
     const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
 

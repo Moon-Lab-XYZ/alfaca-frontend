@@ -1,17 +1,57 @@
-
-import { useState } from "react";
-import { Copy, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Copy, ExternalLink, Wallet } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  useWalletClient,
+  useWriteContract,
+  useWaitForTransactionReceipt
+} from "wagmi";
+import { mutate } from "swr";
 
-interface ProfileCoinCardProps {
-  name: string;
-  ticker: string;
-  image: string;
-  volume24h: number;
-  contractAddress: string;
-  dexScreenerLink: string;
-}
+const lpLockerAbi = [
+  {
+    name: "getLpTokenIdsForUser",
+    inputs: [{ type: "address", name: "user" }],
+    outputs: [{ type: "uint256[]" }],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    name: "_userRewardRecipientForToken",
+    inputs: [{ type: "uint256" }],
+    outputs: [
+      { type: "address", name: "recipient" },
+      { type: "uint256", name: "lpTokenId" }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    name: "collectRewards",
+    inputs: [{ type: "uint256", name: "_tokenId" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  }
+];
 
+const factoryAbi = [
+  {
+    name: "getPool",
+    inputs: [
+      { type: "address", name: "tokenA" },
+      { type: "address", name: "tokenB" },
+      { type: "uint24", name: "fee" }
+    ],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+    type: "function"
+  }
+];
+
+const LP_LOCKER_ADDRESS = "0xD98A99d3c757eB9b115272AF6c5FC311DFA668D2";
+
+// Available gradients for the coin cards
 const pastelGradients = [
   "linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)",
   "linear-gradient(90deg, rgb(245,152,168) 0%, rgb(246,237,178) 100%)",
@@ -27,6 +67,18 @@ const pastelGradients = [
   "linear-gradient(to right, #84fab0 0%, #8fd3f4 100%)",
 ];
 
+interface ProfileCoinCardProps {
+  name: string;
+  ticker: string;
+  image: string;
+  volume24h: number;
+  contractAddress: string;
+  dexScreenerLink: string;
+  userAddress?: string;
+  isOwnProfile?: boolean;
+  earnedRewards?: number;
+}
+
 export const ProfileCoinCard = ({
   name,
   ticker,
@@ -34,8 +86,50 @@ export const ProfileCoinCard = ({
   volume24h,
   contractAddress,
   dexScreenerLink,
+  userAddress,
+  isOwnProfile = false,
+  earnedRewards = 0
 }: ProfileCoinCardProps) => {
   const { toast } = useToast();
+  const { data: walletClient } = useWalletClient();
+
+  // Writing contracts
+  const {
+    writeContract,
+    data: claimTxHash,
+    isPending: isClaimLoading,
+    error: claimError
+  } = useWriteContract();
+
+  // Transaction status
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed
+  } = useWaitForTransactionReceipt({
+    hash: claimTxHash,
+  });
+
+  // Combined loading state
+  const collectingTokenId = isClaimLoading || isConfirming ? "all" : null;
+
+  useEffect(() => {
+    if (isConfirmed) {
+      toast({
+        description: `Successfully claimed rewards!`,
+        duration: 2000,
+      });
+    }
+  }, [isConfirmed, toast]);
+
+  useEffect(() => {
+    if (claimError) {
+      toast({
+        variant: "destructive",
+        description: `Failed to claim rewards: ${claimError.message}`,
+        duration: 3000,
+      });
+    }
+  }, [claimError, toast]);
 
   const formatVolume = (volume: number) => {
     if (volume >= 1000000000) {
@@ -67,6 +161,44 @@ export const ProfileCoinCard = ({
   const handleDexScreener = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.open(dexScreenerLink, '_blank');
+  };
+
+  const handleClaim = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!walletClient) {
+      toast({
+        variant: "destructive",
+        description: "Wallet not connected",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      writeContract({
+        address: LP_LOCKER_ADDRESS,
+        abi: lpLockerAbi,
+        functionName: 'collectRewards',
+        args: [2241997n], // Using hardcoded token ID as in the original
+      }, {
+        onSuccess: () => {
+          mutate('userTokens');
+        }
+      });
+
+      toast({
+        description: `Transaction submitted, waiting for confirmation...`,
+        duration: 5000,
+      });
+    } catch (error: any) {
+      console.error("Error claiming rewards:", error);
+      toast({
+        variant: "destructive",
+        description: `Failed to submit transaction: ${error.message}`,
+        duration: 3000,
+      });
+    }
   };
 
   return (
@@ -116,6 +248,28 @@ export const ProfileCoinCard = ({
               <ExternalLink size={14} /> DEX
             </button>
           </div>
+
+          {isOwnProfile && (
+            <div className="mt-4 pt-3 border-t border-white/10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-xs text-white/50">Earned Rewards</p>
+                  <p className="text-sm font-medium text-[#E5DEFF]">~${earnedRewards.toFixed(4)}</p>
+                </div>
+                <button
+                  onClick={handleClaim}
+                  disabled={!!collectingTokenId}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-4 text-xs transition-colors ${
+                    !!collectingTokenId
+                      ? "bg-[#E5DEFF]/50 text-black/50 cursor-not-allowed"
+                      : "bg-[#E5DEFF] text-black hover:bg-[#E5DEFF]/90"
+                  }`}
+                >
+                  <Wallet size={14} /> {collectingTokenId ? "Claiming..." : "Claim Rewards"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

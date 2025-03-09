@@ -22,11 +22,7 @@ const supabase = createClient(
 );
 
 const Profile = () => {
-  const totalVolume = 0;
   const creatorGradient = pastelGradients[0];
-
-  // Mock data for earnings
-  const totalEarnings = 0;
 
   const [userContext, setUserContext] = useState<any>(null);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
@@ -49,12 +45,9 @@ const Profile = () => {
   } = useSWR(`userTokens`, async () => {
     try {
       if (!user) return;
-      const { data: userTokens, error } = await supabase
-        .from('tokens')
-        .select('*')
-        .eq('creator', user.user.id)
-        .order('created_at', { ascending: false })
-        .limit(1000);
+      const { data: userTokens, error } = await supabase.rpc('get_user_tokens_with_rewards', {
+        user_id: user.user.id,
+      })
       if (!userTokens) {
         return [];
       }
@@ -65,10 +58,43 @@ const Profile = () => {
     }
   });
 
-  useEffect(() => {
-    if (user) mutateUserTokens();
-  }, [user])
+  const {
+    data: totalEarnings,
+    mutate: mutateTotalEarnings,
+    isLoading: totalEarningsIsLoading,
+  } = useSWR(`totalEarnings`, async () => {
+    try {
+      if (!user) return;
+      const { data: totalEarnings, error } = await supabase.rpc('get_user_rewards', {
+        user_id: user.user.id,
+      })
+      if (!totalEarnings || totalEarnings.length === 0) {
+        return 0;
+      }
+      return totalEarnings[0].total_rewards_usdc;
+    } catch (error) {
+      console.error('Error fetching user tokens', error);
+    }
+  });
 
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      mutateUserTokens();
+      mutateTotalEarnings();
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      mutateUserTokens();
+      mutateTotalEarnings();
+    }
+  }, [user]);
 
   useEffect(() => {
   const load = async () => {
@@ -133,9 +159,16 @@ const Profile = () => {
               <span className="text-white/70 text-lg flex items-center justify-center gap-2">
                 💰 Total Earnings
               </span>
-              <div className="font-bold text-3xl text-[#E5DEFF]">
-                ${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
+              {
+                totalEarningsIsLoading || !totalEarnings ?
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin mb-2"></div>
+                  </div>
+                 :
+                <div className="font-bold text-3xl text-[#E5DEFF]">
+                  ~${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -146,7 +179,7 @@ const Profile = () => {
               <div className="w-10 h-10 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin mb-2"></div>
             </div>
           ) : tokenData && tokenData.length > 0 ? (
-            tokenData.map((token, index) => (
+            tokenData.map((token: any, index: any) => (
               <ProfileCoinCard
                 key={index}
                 name={token.name}
@@ -155,6 +188,9 @@ const Profile = () => {
                 volume24h={token.txn_vol_last_24h ? token.txn_vol_last_24h : 0}
                 contractAddress={token.contract_address}
                 dexScreenerLink={token.link}
+                userAddress={user?.user.verified_addresses[0]}
+                earnedRewards={token.total_recipient_rewards_usdc ? token.total_recipient_rewards_usdc : 0}
+                isOwnProfile={true}
               />
             ))
           ) : (

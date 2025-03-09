@@ -15,12 +15,14 @@ declare module "next-auth" {
     user: {
       fid: number;
       uid: number;
+      userAddress: string;
     };
   }
 
   interface User {
     id: string;
     uid: string;
+    userAddress: string;
   }
 }
 
@@ -60,6 +62,7 @@ export const authOptions: AuthOptions = {
         }
 
         let userId: number | undefined = undefined;
+        let userAddress: number | undefined = undefined;
 
         const { data: userExists, error } = await supabase
           .from('users')
@@ -106,17 +109,19 @@ export const authOptions: AuthOptions = {
 
             if (createdUser) {
               userId = createdUser.id as number;
+              userAddress = createdUser.verified_addresses[0];
             }
-            console.log(createdUser);
           }
         } else {
           // User exists, use its ID
           userId = userExists.id as number;
+          userAddress = userExists.verified_addresses[0];
         }
 
         return {
           id: fid.toString(),
           uid: userId !== undefined ? userId.toString() : '',
+          userAddress: userAddress !== undefined ? userAddress.toString() : '',
         };
       },
     }),
@@ -124,7 +129,7 @@ export const authOptions: AuthOptions = {
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        return { ...token, id: user.id, uid: user.uid }; // Save id to token as docs says: https://next-auth.js.org/configuration/callbacks
+        return { ...token, id: user.id, uid: user.uid, userAddress: user.userAddress }; // Save id to token as docs says: https://next-auth.js.org/configuration/callbacks
       }
       return token;
     },
@@ -132,6 +137,7 @@ export const authOptions: AuthOptions = {
       if (session?.user) {
         session.user.fid = parseInt(token.sub ?? '');
         session.user.uid = parseInt(token.uid as string);
+        session.user.userAddress = token.userAddress as string;
       }
       return session;
     },
