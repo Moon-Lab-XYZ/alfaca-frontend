@@ -162,7 +162,7 @@ const Profile = () => {
               {
                 totalEarningsIsLoading || !totalEarnings ?
                   <div className="flex flex-col items-center justify-center">
-                    <div className="w-10 h-10 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <div className="w-6 h-6 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin my-2"></div>
                   </div>
                  :
                 <div className="font-bold text-3xl text-[#E5DEFF]">

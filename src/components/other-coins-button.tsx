@@ -30,7 +30,10 @@ export const OtherCoinsButton = ({
           size="sm"
         />
         <div className="text-sm text-white/70">
-          ${ticker} + {coinsCount} more coins
+          ${ticker}
+          {coinsCount > 0 && (
+            ` + ${coinsCount} more ${coinsCount === 1 ? 'coin' : 'coins'}`
+          )}
         </div>
       </div>
       <ChevronRight className="w-4 h-4 text-white/50 group-hover:text-white/70 transition-colors" />
