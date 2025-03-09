@@ -67,8 +67,7 @@ export const CoinCard = ({
 
   const handleCreatorCoinsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/user/${user_id}`, {
-    });
+    router.push(`/user/${user_id}`);
   };
 
   return (

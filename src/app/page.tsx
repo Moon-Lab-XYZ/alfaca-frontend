@@ -37,7 +37,7 @@ const Index = () => {
         .single();
       return currentRound;
     } catch (error) {
-      console.error('Error fetching user tokens', error);
+      // console.log('Error fetching user tokens', error);
     }
   });
 

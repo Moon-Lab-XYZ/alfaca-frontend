@@ -38,6 +38,25 @@ const Profile = () => {
   const { data: user } = useUser();
 
   const {
+    data: userWithRank,
+    mutate: mutateUserWithRank,
+  } = useSWR(`userWithRank`, async () => {
+    try {
+      if (!user) return;
+      const { data: userWithRank, error } = await supabase.rpc('get_user_with_rank', {
+        user_id: user.user.id,
+      })
+
+      if (!userWithRank || userWithRank.length === 0) {
+        return null;
+      }
+      return userWithRank[0];
+    } catch (error) {
+      console.error('Error fetching user with rank', error);
+    }
+  });
+
+  const {
     data: tokenData,
     error,
     mutate: mutateUserTokens,
@@ -64,7 +83,7 @@ const Profile = () => {
     isLoading: totalEarningsIsLoading,
   } = useSWR(`totalEarnings`, async () => {
     try {
-      if (!user) return;
+      if (!user) return 0;
       const { data: totalEarnings, error } = await supabase.rpc('get_user_rewards', {
         user_id: user.user.id,
       })
@@ -93,6 +112,7 @@ const Profile = () => {
     if (user) {
       mutateUserTokens();
       mutateTotalEarnings();
+      mutateUserWithRank();
     }
   }, [user]);
 
@@ -130,7 +150,6 @@ const Profile = () => {
     async function setContext() {
       const user = (await sdk.context).user;
       setUserContext(user);
-      console.log(user);
     }
 
     if (sdk) {
@@ -147,7 +166,7 @@ const Profile = () => {
             image={userContext ? userContext.pfpUrl: "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
             volume24h={user?.user ? user.user.total_txn_vol_last_24h : 0}
             gradient={creatorGradient}
-            rank={8}
+            rank={userWithRank ? userWithRank.rank : 'N/A'}
             onClick={() => {}}
           />
           <SettingsDialog />
@@ -160,7 +179,7 @@ const Profile = () => {
                 💰 Total Earnings
               </span>
               {
-                totalEarningsIsLoading || !totalEarnings ?
+                totalEarningsIsLoading ?
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-6 h-6 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin my-2"></div>
                   </div>

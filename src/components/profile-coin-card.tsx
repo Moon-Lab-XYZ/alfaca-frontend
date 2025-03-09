@@ -35,20 +35,6 @@ const lpLockerAbi = [
   }
 ];
 
-const factoryAbi = [
-  {
-    name: "getPool",
-    inputs: [
-      { type: "address", name: "tokenA" },
-      { type: "address", name: "tokenB" },
-      { type: "uint24", name: "fee" }
-    ],
-    outputs: [{ type: "address" }],
-    stateMutability: "view",
-    type: "function"
-  }
-];
-
 const LP_LOCKER_ADDRESS = "0xD98A99d3c757eB9b115272AF6c5FC311DFA668D2";
 
 // Available gradients for the coin cards
