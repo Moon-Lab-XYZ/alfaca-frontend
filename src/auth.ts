@@ -86,6 +86,85 @@ export const authOptions: AuthOptions = {
           const userData = (await userResponse.json()).users?.[0];
 
           if (userData) {
+            // Upload profile picture to Supabase Storage if it exists
+            let avatarUrl = null;
+
+            if (userData.pfp_url) {
+              try {
+                // Fetch the image from the original URL
+                const imageResponse = await fetch(userData.pfp_url);
+                const imageBuffer = await imageResponse.arrayBuffer();
+
+                // Determine the file extension and content type based on the URL or Content-Type header
+                let fileExtension = 'jpg';
+                let contentType = 'image/jpeg';
+
+                // Try to get content type from response headers
+                const responseContentType = imageResponse.headers.get('content-type');
+                if (responseContentType) {
+                  contentType = responseContentType;
+
+                  // Map content type to file extension
+                  if (contentType === 'image/png') {
+                    fileExtension = 'png';
+                  } else if (contentType === 'image/svg+xml') {
+                    fileExtension = 'svg';
+                  } else if (contentType === 'image/jpeg' || contentType === 'image/jpg') {
+                    fileExtension = 'jpg';
+                  } else if (contentType === 'image/gif') {
+                    fileExtension = 'gif';
+                  } else if (contentType === 'image/webp') {
+                    fileExtension = 'webp';
+                  }
+                } else {
+                  // Fallback: try to determine from URL
+                  const url = userData.pfp_url.toLowerCase();
+                  if (url.endsWith('.png')) {
+                    fileExtension = 'png';
+                    contentType = 'image/png';
+                  } else if (url.endsWith('.svg')) {
+                    fileExtension = 'svg';
+                    contentType = 'image/svg+xml';
+                  } else if (url.endsWith('.gif')) {
+                    fileExtension = 'gif';
+                    contentType = 'image/gif';
+                  } else if (url.endsWith('.webp')) {
+                    fileExtension = 'webp';
+                    contentType = 'image/webp';
+                  } else if (url.endsWith('.jpg') || url.endsWith('.jpeg')) {
+                    fileExtension = 'jpg';
+                    contentType = 'image/jpeg';
+                  }
+                }
+
+                // Generate a unique filename for the image
+                const fileName = `${fid}_${Date.now()}.${fileExtension}`;
+
+                // Upload the image to Supabase Storage
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                  .from('user-avatars') // Make sure this bucket exists in your Supabase project
+                  .upload(fileName, imageBuffer, {
+                    contentType: 'image/jpeg', // Adjust content type as needed
+                    upsert: true
+                  });
+
+                if (uploadError) {
+                  console.error('Error uploading profile picture:', uploadError);
+                } else {
+                  // Get public URL for the uploaded image
+                  const { data: publicUrlData } = supabase.storage
+                    .from('user-avatars')
+                    .getPublicUrl(fileName);
+
+                  avatarUrl = publicUrlData.publicUrl;
+                }
+              } catch (uploadError) {
+                console.error('Error processing profile picture:', uploadError);
+                // Fallback to the original URL if upload fails
+                avatarUrl = `${IMG_BASE_URL}/${encodeURIComponent(userData.pfp_url)}`;
+              }
+            }
+
             const {data: createdUser, error} = await supabase
               .from('users')
               .insert([
@@ -93,11 +172,7 @@ export const authOptions: AuthOptions = {
                   name: userData.display_name,
                   farcaster_username: userData.username,
                   farcaster_id: fid,
-                  avatar_url: userData.pfp_url
-                    ? `${IMG_BASE_URL}/${encodeURIComponent(
-                        userData.pfp_url
-                      )}`
-                    : null,
+                  avatar_url: `${avatarUrl}?width=200`,
                   custody_address: userData.custody_address,
                   verified_addresses: userData.verified_addresses.eth_addresses,
                   verified_accounts: userData.verified_accounts,
