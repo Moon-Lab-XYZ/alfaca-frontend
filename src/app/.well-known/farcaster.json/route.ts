@@ -4,21 +4,21 @@ export async function GET() {
   const config = {
     accountAssociation: {
       header:
-        "eyJmaWQiOjM2MjEsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgyY2Q4NWEwOTMyNjFmNTkyNzA4MDRBNkVBNjk3Q2VBNENlQkVjYWZFIn0",
-      payload: "eyJkb21haW4iOiJmcmFtZXMtdjIudmVyY2VsLmFwcCJ9",
+        "eyJmaWQiOjU3NywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGQ0NTBCRjcwOWRjMGM5MjBEZDNFNjZkRDFiOTI0NzdkMThhMTE0OUQifQ",
+      payload: "eyJkb21haW4iOiJhbGZhY2EuZnVuIn0",
       signature:
-        "MHhiNDIwMzQ1MGZkNzgzYTExZjRiOTllZTFlYjA3NmMwOTdjM2JkOTY1NGM2ODZjYjkyZTAyMzk2Y2Q0YjU2MWY1MjY5NjI5ZGQ5NTliYjU0YzEwOGI4OGVmNjdjMTVlZTdjZDc2YTRiMGU5NzkzNzA3YzkxYzFkOWFjNTg0YmQzNjFi",
+        "MHg2YTczYzQwYzU1NmRjNGVlY2U1NmNmMmMwMGZhZmUxODNiMzUyYzI5M2RmYTkzNDljYTIzMzEzZWI5YjNhNGI0NWExMzJjYmM3OGI5ZDlhMWYyMzkyNDUzNmU0MmRlZTliODJhNmI5YWUxMDNkMTVjYTFhYmM5ZmM3ODQxOTE4MDFj",
     },
     frame: {
       version: "1",
-      name: "Frames v2 Demo",
-      iconUrl: `${appUrl}/icon.png`,
+      name: "Alfaca",
+      iconUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//alfaca.png`,
       homeUrl: appUrl,
-      imageUrl: `${appUrl}/frames/hello/opengraph-image`,
-      buttonTitle: "Launch Frame",
-      splashImageUrl: `${appUrl}/splash.png`,
-      splashBackgroundColor: "#f7f7f7",
-      webhookUrl: `${appUrl}/api/webhook`,
+      imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image.png`,
+      buttonTitle: "Launch Alfaca",
+      splashImageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//alfaca.png`,
+      splashBackgroundColor: "#111111",
+      // webhookUrl: `${appUrl}/api/webhook`,
     },
   };
 
