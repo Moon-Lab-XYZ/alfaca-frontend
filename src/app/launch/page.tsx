@@ -25,7 +25,6 @@ const Launch = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const [showShareModal, setShowShareModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     ticker: "",
@@ -131,10 +130,6 @@ const Launch = () => {
           image: file,
           imageUrl: urlData.publicUrl
         }));
-
-        toast({
-          description: "Image uploaded successfully.",
-        });
       } catch (error) {
         console.error("Error uploading image: ", error);
         toast({
@@ -145,19 +140,6 @@ const Launch = () => {
         setUploadLoading(false);
       }
     }
-  };
-
-  const handleShare = (platform: 'twitter' | 'farcaster') => {
-    const text = encodeURIComponent(`Check out my new token ${formData.name} ($${formData.ticker}) on Lovable!`);
-
-    if (platform === 'twitter') {
-      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
-    } else {
-      toast({
-        description: "Farcaster sharing will be available soon!",
-      });
-    }
-    setShowShareModal(false);
   };
 
   const isFormValid = formData.name && formData.ticker && formData.imageUrl;
@@ -290,33 +272,6 @@ const Launch = () => {
         </div>
         <BottomNav />
       </div>
-
-      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
-        <DialogContent className="bg-[#1A1A1A] border border-white/10">
-          <DialogHeader>
-            <DialogTitle className="text-white font-['Outfit']">Share Your Token</DialogTitle>
-            <DialogDescription className="text-white/70">
-              Share your newly launched token on social media
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 mt-4">
-            <button
-              onClick={() => handleShare('twitter')}
-              className="flex items-center justify-center gap-2 w-full bg-[#E5DEFF] hover:bg-[#E5DEFF]/90 text-[#111111] rounded-xl px-6 py-2.5 transition-colors font-['Outfit']"
-            >
-              <Twitter className="w-5 h-5" />
-              Share on X
-            </button>
-            <button
-              onClick={() => handleShare('farcaster')}
-              className="flex items-center justify-center gap-2 w-full bg-black/50 hover:bg-black/70 text-white border border-white/10 rounded-xl px-6 py-2.5 transition-colors font-['Outfit']"
-            >
-              <Share2 className="w-5 h-5" />
-              Share on Farcaster
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

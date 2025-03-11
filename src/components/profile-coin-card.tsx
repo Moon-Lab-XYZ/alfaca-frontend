@@ -7,6 +7,7 @@ import {
   useWaitForTransactionReceipt
 } from "wagmi";
 import { mutate } from "swr";
+import useUser from "@/lib/user";
 
 const lpLockerAbi = [
   {
@@ -78,6 +79,7 @@ export const ProfileCoinCard = ({
 }: ProfileCoinCardProps) => {
   const { toast } = useToast();
   const { data: walletClient } = useWalletClient();
+  const { data: user } = useUser();
 
   // Writing contracts
   const {
@@ -139,7 +141,17 @@ export const ProfileCoinCard = ({
     e.stopPropagation();
     navigator.clipboard.writeText(contractAddress);
     toast({
-      description: "Contract address copied to clipboard",
+      description: "Contract address copied",
+      duration: 2000,
+    });
+  };
+
+  const handleShare = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    navigator.clipboard.writeText(`https://alfaca.fun/user/${user.user.id}`);
+    toast({
+      description: "Share link copied",
       duration: 2000,
     });
   };
@@ -220,18 +232,26 @@ export const ProfileCoinCard = ({
             </div>
           </div>
 
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 justify-between">
+            <div className="flex gap-2">
+              <button
+                onClick={handleCopyAddress}
+                className="flex items-center justify-center gap-1.5 bg-black/40 rounded-lg py-1.5 px-3 text-xs text-white/70 hover:text-white hover:bg-black/60 transition-colors"
+              >
+                <Copy size={14} /> {contractAddress.slice(0, 5)}...{contractAddress.slice(-4)}
+              </button>
+              <button
+                onClick={handleDexScreener}
+                className="flex items-center justify-center gap-1.5 bg-black/40 rounded-lg py-1.5 px-3 text-xs text-white/70 hover:text-white hover:bg-black/60 transition-colors"
+              >
+                <ExternalLink size={14} /> DEX
+              </button>
+            </div>
             <button
-              onClick={handleCopyAddress}
-              className="flex items-center justify-center gap-1.5 bg-black/40 rounded-lg py-1.5 px-3 text-xs text-white/70 hover:text-white hover:bg-black/60 transition-colors"
+              onClick={handleShare}
+              className="place-self-end flex items-center justify-center gap-1.5 bg-black/40 rounded-lg py-1.5 px-3 text-xs text-white/70 hover:text-white hover:bg-black/60 transition-colors"
             >
-              <Copy size={14} /> {contractAddress.slice(0, 5)}...{contractAddress.slice(-4)}
-            </button>
-            <button
-              onClick={handleDexScreener}
-              className="flex items-center justify-center gap-1.5 bg-black/40 rounded-lg py-1.5 px-3 text-xs text-white/70 hover:text-white hover:bg-black/60 transition-colors"
-            >
-              <ExternalLink size={14} /> DEX
+              Share
             </button>
           </div>
 

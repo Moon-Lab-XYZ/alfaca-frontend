@@ -58,7 +58,9 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.21.55",
-    "wagmi": "^2.14.3"
+    "wagmi": "^2.14.3",
+    "next-themes": "^0.3.0",
+    "sonner": "^1.5.0"
   },
   "devDependencies": {
     "@types/node": "^20",
