@@ -22,6 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: "Alfaca",
       description: "coin launch competition",
+      images: [{
+        url: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image.png`,
+      }]
     },
     other: {
       "fc:frame": JSON.stringify(frame),
