@@ -149,7 +149,7 @@ export const ProfileCoinCard = ({
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
-    navigator.clipboard.writeText(`https://alfaca.fun/user/${user.user.id}`);
+    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_URL}/user/${user.user.id}`);
     toast({
       description: "Share link copied",
       duration: 2000,
