@@ -7,7 +7,7 @@ import { ALFACA_ABI } from "@/lib/abi/alfaca";
 
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
 const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
-const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string).connect(provider);
 const alfacaContract = new ethers.Contract(process.env.ALFACA_CONTRACT as string, ALFACA_ABI, wallet);
 
 const DEX_SCREENER_BASE_URL = "https://dexscreener.com/base/";
@@ -185,11 +185,6 @@ async function deployToken({
   ethValue = "0"
 }: DeployTokenParams) {
   try {
-    // Set up provider and wallet signer
-    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
-    // const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-    const wallet = ethers.Wallet.fromPhrase(process.env.MNEMONIC as string).connect(provider);
-
     // Connect to the contract
     const alfacaContract = new ethers.Contract(
       process.env.ALFACA_CONTRACT as string,

@@ -16,11 +16,7 @@ let frame = {
   },
 };
 
-interface Params {
-  id: string;
-}
-
-export async function generateMetadata({params}: { params: Params }): Promise<Metadata> {
+export async function generateMetadata({params}: any): Promise<Metadata> {
   const data = await params;
   frame.button.action.url = `${process.env.NEXT_PUBLIC_URL}/user/${data.id}`;
 
