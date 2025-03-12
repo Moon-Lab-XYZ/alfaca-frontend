@@ -4,10 +4,10 @@ export async function GET() {
   const config = {
     accountAssociation: {
       header:
-        "eyJmaWQiOjU3NywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGQ0NTBCRjcwOWRjMGM5MjBEZDNFNjZkRDFiOTI0NzdkMThhMTE0OUQifQ",
+        "eyJmaWQiOjg3NTc0MSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDI1OTFBZTE5MjA3YmUzM0JiZGI0MThhOTk5MUFEQ0I1RDY2RTg0OEYifQ",
       payload: "eyJkb21haW4iOiJhbGZhY2EuZnVuIn0",
       signature:
-        "MHg2YTczYzQwYzU1NmRjNGVlY2U1NmNmMmMwMGZhZmUxODNiMzUyYzI5M2RmYTkzNDljYTIzMzEzZWI5YjNhNGI0NWExMzJjYmM3OGI5ZDlhMWYyMzkyNDUzNmU0MmRlZTliODJhNmI5YWUxMDNkMTVjYTFhYmM5ZmM3ODQxOTE4MDFj",
+        "MHg3ZTBmNmY1OTA5MzliMWUyNTJkMTgzZDZhNTNlZDdjNDljOTYwNGUwZDA1YmI1MTA0ZDJiNTUwYWI4OTQ1OTM4MDNjMjBhZDI1YTkxYTYzNTdjMzk4NTZhZWE4Y2RkMzI1YjgxODIzMTMzODE3NzExOWFlMzRmYWM3OTI4MjdjYTFj",
     },
     frame: {
       version: "1",
