@@ -66,7 +66,7 @@ export const ALFACA_ABI = [
           { "internalType": "uint256", "name": "positionId", "type": "uint256" },
           { "internalType": "address", "name": "locker", "type": "address" }
         ],
-        "internalType": "struct Clanker.DeploymentInfo[]",
+        "internalType": "struct Alfaca.DeploymentInfo[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -148,14 +148,14 @@ export const ALFACA_ABI = [
           { "internalType": "address", "name": "pairedToken", "type": "address" },
           { "internalType": "uint24", "name": "devBuyFee", "type": "uint24" }
         ],
-        "internalType": "struct Clanker.PoolConfig",
+        "internalType": "struct Alfaca.PoolConfig",
         "name": "_poolConfig",
         "type": "tuple"
       }
     ],
     "name": "deployToken",
     "outputs": [
-      { "internalType": "contract ClankerToken", "name": "token", "type": "address" },
+      { "internalType": "contract AlfacaToken", "name": "token", "type": "address" },
       { "internalType": "uint256", "name": "positionId", "type": "uint256" }
     ],
     "stateMutability": "payable",
