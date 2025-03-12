@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
   console.log("🔹 Request Params:", params);
   console.log("🔹 Creating Token...");
 
-  const tx = await alfacaContract.toggleAllowedPairedToken(WETH_ADDRESS, true);
-  console.log("🔹 Transaction sent, waiting for confirmation...", tx.hash);
-  await tx.wait();
-  console.log("✅ WETH allowed as paired token");
+  // const tx = await alfacaContract.toggleAllowedPairedToken(WETH_ADDRESS, true);
+  // console.log("🔹 Transaction sent, waiting for confirmation...", tx.hash);
+  // await tx.wait();
+  // console.log("✅ WETH allowed as paired token");
 
   const tokenName = params.name;
   const tokenSymbol = params.symbol;
