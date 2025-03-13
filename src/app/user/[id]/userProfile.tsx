@@ -123,36 +123,6 @@ const Profile = () => {
   }, [user]);
 
   useEffect(() => {
-  const load = async () => {
-    sdk.actions.ready();
-
-    if (status !== "authenticated") {
-      await authenticate();
-    }
-  };
-
-  const authenticate = async () => {
-    try {
-      const result = await sdk.actions.signIn({
-        nonce: await getNonce(),
-      });
-      const response = await signIn("credentials", {
-        message: result.message,
-        signature: result.signature,
-        redirect: false,
-      });
-    } catch (e) {
-      console.log("Failed to authenticate: ", e);
-      if (router) router.push("/");
-    }
-  }
-  if (sdk && !isSDKLoaded) {
-    setIsSDKLoaded(true);
-    load();
-  }
-  }, [isSDKLoaded]);
-
-  useEffect(() => {
     async function setContext() {
       const user = (await sdk.context).user;
       setUserContext(user);
