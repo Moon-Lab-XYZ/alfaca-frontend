@@ -4,11 +4,28 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   useWalletClient,
   useWriteContract,
-  useWaitForTransactionReceipt
+  useWaitForTransactionReceipt,
 } from "wagmi";
 import { mutate } from "swr";
 import useUser from "@/lib/user";
 import sdk from "@farcaster/frame-sdk";
+import { ALFACA_ABI } from "@/lib/abi/alfaca";
+
+// Available gradients for the coin cards
+const pastelGradients = [
+  "linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)",
+  "linear-gradient(90deg, rgb(245,152,168) 0%, rgb(246,237,178) 100%)",
+  "linear-gradient(to right, #ffc3a0 0%, #ffafbd 100%)",
+  "linear-gradient(to top, #d299c2 0%, #fef9d7 100%)",
+  "linear-gradient(to top, #e6b980 0%, #eacda3 100%)",
+  "linear-gradient(184.1deg, rgba(249,255,182,1) 44.7%, rgba(226,255,172,1) 67.2%)",
+  "linear-gradient(to right, #a8edea 0%, #fed6e3 100%)",
+  "linear-gradient(to top, #96fbc4 0%, #f9f586 100%)",
+  "linear-gradient(to right, #fff1eb 0%, #ace0f9 100%)",
+  "linear-gradient(to top, #fad0c4 0%, #ffd1ff 100%)",
+  "linear-gradient(to right, #ffecd2 0%, #fcb69f 100%)",
+  "linear-gradient(to right, #84fab0 0%, #8fd3f4 100%)",
+];
 
 const lpLockerAbi = [
   {
@@ -35,24 +52,6 @@ const lpLockerAbi = [
     stateMutability: "nonpayable",
     type: "function"
   }
-];
-
-const LP_LOCKER_ADDRESS = "0xD98A99d3c757eB9b115272AF6c5FC311DFA668D2";
-
-// Available gradients for the coin cards
-const pastelGradients = [
-  "linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)",
-  "linear-gradient(90deg, rgb(245,152,168) 0%, rgb(246,237,178) 100%)",
-  "linear-gradient(to right, #ffc3a0 0%, #ffafbd 100%)",
-  "linear-gradient(to top, #d299c2 0%, #fef9d7 100%)",
-  "linear-gradient(to top, #e6b980 0%, #eacda3 100%)",
-  "linear-gradient(184.1deg, rgba(249,255,182,1) 44.7%, rgba(226,255,172,1) 67.2%)",
-  "linear-gradient(to right, #a8edea 0%, #fed6e3 100%)",
-  "linear-gradient(to top, #96fbc4 0%, #f9f586 100%)",
-  "linear-gradient(to right, #fff1eb 0%, #ace0f9 100%)",
-  "linear-gradient(to top, #fad0c4 0%, #ffd1ff 100%)",
-  "linear-gradient(to right, #ffecd2 0%, #fcb69f 100%)",
-  "linear-gradient(to right, #84fab0 0%, #8fd3f4 100%)",
 ];
 
 interface ProfileCoinCardProps {
@@ -173,14 +172,19 @@ export const ProfileCoinCard = ({
     }
 
     try {
+      console.log("Claiming rewards for:", contractAddress);
+
       writeContract({
-        address: LP_LOCKER_ADDRESS,
-        abi: lpLockerAbi,
-        functionName: 'collectRewards',
-        args: [2241997n], // Using hardcoded token ID as in the original
+        address: process.env.NEXT_PUBLIC_ALFACA_CONTRACT as any,
+        abi: ALFACA_ABI,
+        functionName: 'claimRewards',
+        args: [contractAddress],
       }, {
         onSuccess: () => {
           mutate('userTokens');
+        },
+        onError: (error) => {
+          console.log(error);
         }
       });
 
