@@ -62,7 +62,6 @@ interface ProfileCoinCardProps {
   volume24h: number;
   contractAddress: string;
   dexScreenerLink: string;
-  userAddress?: string;
   isOwnProfile?: boolean;
   earnedRewards?: number;
 }
@@ -74,7 +73,6 @@ export const ProfileCoinCard = ({
   volume24h,
   contractAddress,
   dexScreenerLink,
-  userAddress,
   isOwnProfile = false,
   earnedRewards = 0
 }: ProfileCoinCardProps) => {
