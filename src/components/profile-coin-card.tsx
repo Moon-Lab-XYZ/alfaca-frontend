@@ -8,6 +8,7 @@ import {
 } from "wagmi";
 import { mutate } from "swr";
 import useUser from "@/lib/user";
+import sdk from "@farcaster/frame-sdk";
 
 const lpLockerAbi = [
   {
@@ -156,9 +157,9 @@ export const ProfileCoinCard = ({
     });
   };
 
-  const handleDexScreener = (e: React.MouseEvent) => {
+  const handleDexScreener = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(dexScreenerLink, '_blank');
+    await sdk.actions.openUrl(dexScreenerLink);
   };
 
   const handleClaim = async (e: React.MouseEvent) => {
