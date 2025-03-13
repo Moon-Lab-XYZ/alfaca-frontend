@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation";
 import useUser from "@/lib/user";
 import { mutate } from "swr";
+import { Info } from "lucide-react";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -32,6 +33,7 @@ const Launch = () => {
     imageUrl: "",
   });
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  const [showFarcasterModal, setShowFarcasterModal] = useState(false);
 
   const router = useRouter();
 
@@ -50,10 +52,16 @@ const Launch = () => {
 
   useEffect(() => {
     const load = async () => {
-      sdk.actions.ready();
+      const context = await sdk.context;
 
-      if (status !== "authenticated") {
-        await authenticate();
+      if (context) {
+        sdk.actions.ready();
+        if (status !== "authenticated") {
+          await authenticate();
+        }
+      } else {
+        console.log("sdk context not found");
+        setShowFarcasterModal(true);
       }
     };
 
@@ -69,7 +77,6 @@ const Launch = () => {
         });
       } catch (e) {
         console.log("Failed to authenticate: ", e);
-        if (router) router.push("/");
       }
     }
     if (sdk && !isSDKLoaded) {
@@ -272,6 +279,33 @@ const Launch = () => {
         </div>
         <BottomNav />
       </div>
+      <Dialog open={showFarcasterModal}>
+        <DialogContent className="bg-[#000000] border border-white rounded-xl p-6 max-w-xs mx-auto">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/10">
+              <Info className="w-6 h-6 text-white" />
+            </div>
+
+            <DialogTitle className="text-white text-center text-lg font-medium font-['Outfit']">
+              Farcaster Required
+            </DialogTitle>
+
+            <DialogDescription className="text-white/70 text-center font-['Outfit']">
+              Use our <a href="https://warpcast.com/" target="_blank" className="underline">Farcaster</a> frame to launch a coin through Alfaca.
+            </DialogDescription>
+
+            <button
+              onClick={() => {
+                setShowFarcasterModal(false);
+                router.push('/');
+              }}
+              className="w-full bg-[#E5DEFF] hover:bg-[#E5DEFF]/90 text-[#111111] rounded-xl px-6 py-2.5 font-medium transition-all duration-200 mt-2 font-['Outfit']"
+            >
+              Got it
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
