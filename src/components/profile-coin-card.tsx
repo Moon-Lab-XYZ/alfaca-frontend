@@ -63,6 +63,7 @@ interface ProfileCoinCardProps {
   dexScreenerLink: string;
   isOwnProfile?: boolean;
   earnedRewards?: number;
+  profileUserId?: string;
 }
 
 export const ProfileCoinCard = ({
@@ -73,7 +74,8 @@ export const ProfileCoinCard = ({
   contractAddress,
   dexScreenerLink,
   isOwnProfile = false,
-  earnedRewards = 0
+  earnedRewards = 0,
+  profileUserId,
 }: ProfileCoinCardProps) => {
   const { toast } = useToast();
   const { data: walletClient } = useWalletClient();
@@ -147,7 +149,7 @@ export const ProfileCoinCard = ({
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
-    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_URL}/user/${user.user.id}`);
+    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_URL}/user/${profileUserId}`);
     toast({
       description: "Share link copied",
       duration: 2000,

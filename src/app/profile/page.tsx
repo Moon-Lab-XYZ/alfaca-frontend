@@ -209,6 +209,7 @@ const Profile = () => {
                 dexScreenerLink={token.link}
                 earnedRewards={token.total_recipient_rewards_usdc ? token.total_recipient_rewards_usdc : 0}
                 isOwnProfile={true}
+                profileUserId={user?.user ? user.user.id : ''}
               />
             ))
           ) : (
