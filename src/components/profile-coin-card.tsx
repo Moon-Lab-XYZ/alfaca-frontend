@@ -148,7 +148,6 @@ export const ProfileCoinCard = ({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return;
     navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_URL}/user/${profileUserId}`);
     toast({
       description: "Share link copied",
@@ -158,7 +157,12 @@ export const ProfileCoinCard = ({
 
   const handleDexScreener = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await sdk.actions.openUrl(dexScreenerLink);
+    const context = await sdk.context;
+    if (context) {
+      await sdk.actions.openUrl(dexScreenerLink);
+    } else {
+      window.open(dexScreenerLink, "_blank");
+    }
   };
 
   const handleClaim = async (e: React.MouseEvent) => {
