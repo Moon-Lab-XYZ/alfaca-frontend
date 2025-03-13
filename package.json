@@ -49,18 +49,19 @@
     "clsx": "^2.1.1",
     "ethers": "^6.13.5",
     "lucide-react": "^0.469.0",
+    "moment-timezone": "^0.5.47",
     "next": "15.0.3",
     "next-auth": "^4.24.11",
+    "next-themes": "^0.3.0",
     "ox": "^0.4.2",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
+    "sonner": "^1.5.0",
     "swr": "^2.3.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.21.55",
-    "wagmi": "^2.14.3",
-    "next-themes": "^0.3.0",
-    "sonner": "^1.5.0"
+    "wagmi": "^2.14.3"
   },
   "devDependencies": {
     "@types/node": "^20",

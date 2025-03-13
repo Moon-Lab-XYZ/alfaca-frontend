@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react"
 import { signIn, getCsrfToken } from "next-auth/react";
 import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
+import moment from 'moment-timezone';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -77,37 +78,38 @@ const Index = () => {
   }, [isSDKLoaded]);
 
   function getNextRoundEndTime() {
-    const now = new Date();
-    const options = { timeZone: 'America/Los_Angeles' };
-    const pacificTimeNow = new Date(now.toLocaleString('en-US', options));
+    // Get current time in Pacific Time
+    const nowPT = moment().tz('America/Los_Angeles');
 
-    // Create a date object for 4PM Pacific Time today
-    const targetDate = new Date(pacificTimeNow);
-    targetDate.setHours(16, 0, 0, 0); // Set to 4PM PT
+    // Create 4PM PT today
+    const target4PMPT = moment.tz('America/Los_Angeles')
+      .hour(16)
+      .minute(0)
+      .second(0)
+      .millisecond(0);
 
-    // If current Pacific Time is past 4PM PT, set target to next day
-    if (pacificTimeNow > targetDate) {
-      targetDate.setDate(targetDate.getDate() + 1);
+    // If it's already past 4PM PT, set to 4PM PT tomorrow
+    if (nowPT.isAfter(target4PMPT)) {
+      target4PMPT.add(1, 'day');
     }
 
-    // Convert the PT target time back to the local time of the device
-    const targetInLocalTime = new Date(targetDate.toLocaleString('en-US'));
-
-    return targetInLocalTime
+    // Return as a JavaScript Date object in the user's local time zone
+    return target4PMPT.toDate();
   }
 
   useEffect(() => {
     const calculateTimeUntil4PMPT = () => {
-      const now = new Date();
-      const nextRoundEndTime = getNextRoundEndTime();
+      const now = moment();
+      const nextRoundEndTime = moment(getNextRoundEndTime());
 
       // Calculate the difference in milliseconds
-      const diff = nextRoundEndTime.getTime() - now.getTime();
+      const diff = nextRoundEndTime.diff(now);
 
       // Convert to hours, minutes, seconds
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      const duration = moment.duration(diff);
+      const hours = Math.floor(duration.asHours());
+      const minutes = Math.floor(duration.minutes());
+      const seconds = Math.floor(duration.seconds());
 
       return { hours, minutes, seconds };
     };
