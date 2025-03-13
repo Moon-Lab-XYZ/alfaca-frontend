@@ -4,9 +4,6 @@ import { BottomNav } from "@/components/ui/bottom-nav";
 import { ProfileCoinCard } from "@/components/profile-coin-card";
 import { CreatorInfo } from "@/components/creator-info";
 import { pastelGradients } from "@/lib/coin-card-utils";
-import sdk, {
-  type Context,
-} from "@farcaster/frame-sdk";
 import { useState, useEffect, useCallback } from "react";
 import { signIn, getCsrfToken } from "next-auth/react";
 import { useRouter } from 'next/navigation';
@@ -25,28 +22,16 @@ const supabase = createClient(
 const Profile = () => {
   const creatorGradient = pastelGradients[0];
 
-  const [userContext, setUserContext] = useState<any>(null);
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
-
   const params = useParams();
   const userId = params.id;
 
-  const getNonce = useCallback(async () => {
-    const nonce = await getCsrfToken();
-    if (!nonce) throw new Error("Unable to generate nonce");
-    return nonce;
-  }, []);
-
-  const { data: session, status } = useSession();
   const router = useRouter();
-  const { data: user } = useUser();
 
   const {
      data: userWithRank,
      mutate: mutateUserWithRank,
    } = useSWR(`userWithRank-${userId}`, async () => {
      try {
-       if (!user) return;
        const { data: userWithRank, error } = await supabase.rpc('get_user_with_rank', {
          user_id: userId
        })
@@ -54,7 +39,6 @@ const Profile = () => {
        if (!userWithRank || userWithRank.length === 0) {
          return null;
        }
-       console.log(userWithRank);
        return userWithRank[0];
      } catch (error) {
        console.error('Error fetching user with rank', error);
@@ -68,7 +52,6 @@ const Profile = () => {
     isLoading,
   } = useSWR(`userTokens-${userId}`, async () => {
     try {
-      if (!user) return;
       const { data: userTokens, error } = await supabase.rpc('get_user_tokens_with_rewards', {
         user_id: userId,
       })
@@ -88,7 +71,6 @@ const Profile = () => {
     isLoading: totalEarningsIsLoading,
   } = useSWR(`totalEarnings-${userId}`, async () => {
     try {
-      if (!user) return 0;
       const { data: totalEarnings, error } = await supabase.rpc('get_user_rewards', {
         user_id: userId,
       })
@@ -113,26 +95,6 @@ const Profile = () => {
       clearInterval(interval);
     };
   }, []);
-
-  useEffect(() => {
-    if (user) {
-      mutateUserTokens();
-      mutateTotalEarnings();
-      mutateUserWithRank();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    async function setContext() {
-      const user = (await sdk.context).user;
-      setUserContext(user);
-      console.log(user);
-    }
-
-    if (sdk) {
-      setContext();
-    }
-  }, [sdk]);
 
   return (
     <div className="min-h-screen bg-[#000000] pb-20">
@@ -197,7 +159,6 @@ const Profile = () => {
                 volume24h={token.txn_vol_last_24h ? token.txn_vol_last_24h : 0}
                 contractAddress={token.contract_address}
                 dexScreenerLink={token.link}
-                userAddress={user?.user.verified_addresses[0]}
                 earnedRewards={token.total_recipient_rewards_usdc ? token.total_recipient_rewards_usdc : 0}
                 isOwnProfile={false}
               />

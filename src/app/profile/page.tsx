@@ -207,7 +207,6 @@ const Profile = () => {
                 volume24h={token.txn_vol_last_24h ? token.txn_vol_last_24h : 0}
                 contractAddress={token.contract_address}
                 dexScreenerLink={token.link}
-                userAddress={user?.user.verified_addresses[0]}
                 earnedRewards={token.total_recipient_rewards_usdc ? token.total_recipient_rewards_usdc : 0}
                 isOwnProfile={true}
               />
