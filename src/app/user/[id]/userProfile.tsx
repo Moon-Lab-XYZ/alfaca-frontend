@@ -13,6 +13,7 @@ import useSWR from "swr";
 import useUser from "@/lib/user";
 import { ChevronLeft } from "lucide-react";
 import { useParams } from 'next/navigation'
+import sdk from "@farcaster/frame-sdk";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -20,6 +21,8 @@ const supabase = createClient(
 );
 
 const Profile = () => {
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+
   const creatorGradient = pastelGradients[0];
 
   const params = useParams();
@@ -95,6 +98,16 @@ const Profile = () => {
       clearInterval(interval);
     };
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      sdk.actions.ready();
+    };
+    if (sdk && !isSDKLoaded) {
+      setIsSDKLoaded(true);
+      load();
+    }
+  }, [isSDKLoaded]);
 
   return (
     <div className="min-h-screen bg-[#000000] pb-20">
