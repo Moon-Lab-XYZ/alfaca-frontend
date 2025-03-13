@@ -3,7 +3,7 @@ import UserProfile from "./userProfile";
 
 let frame = {
   version: "next",
-  imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image.png`,
+  imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v1.png`,
   button: {
     title: "Launch Alfaca",
     action: {
@@ -26,7 +26,7 @@ export async function generateMetadata({params}: any): Promise<Metadata> {
       title: "Alfaca",
       description: "coin launch competition",
       images: [{
-        url: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image.png`,
+        url: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v1.png`,
       }]
     },
     other: {
