@@ -107,7 +107,7 @@ const Profile = () => {
       setIsSDKLoaded(true);
       load();
     }
-  }, [isSDKLoaded]);
+  }, [sdk]);
 
   return (
     <div className="min-h-screen bg-[#000000] pb-20">

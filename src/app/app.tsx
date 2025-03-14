@@ -2,7 +2,7 @@
 
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { CoinCard } from "@/components/coin-card";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import sdk, {
   AddFrame,
   FrameNotificationDetails,
@@ -13,6 +13,7 @@ import { signIn, getCsrfToken } from "next-auth/react";
 import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
 import moment from 'moment-timezone';
+import useUser from "@/lib/user";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -23,7 +24,10 @@ const DAILY_PRIZE_POOL_BASE_AMOUNT = 500;
 
 const Index = () => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  // const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  const isSDKLoaded = useRef(false);
+
+  const { data: user } = useUser();
 
   const {
     data: currentRound,
@@ -69,13 +73,32 @@ const Index = () => {
 
   useEffect(() => {
     const load = async () => {
+      console.log('load');
+      const context = await sdk.context;
       sdk.actions.ready();
+
+      if (context && context.client.added === false) {
+        const result = await sdk.actions.addFrame();
+        console.log(result);
+        if (result.notificationDetails && user) {
+          await fetch('/api/register-notifications', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: result.notificationDetails.url,
+              token: result.notificationDetails.token,
+            }),
+          });
+        }
+      }
     };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
+    if (sdk && !isSDKLoaded.current) {
+      isSDKLoaded.current = true;
       load();
     }
-  }, [isSDKLoaded]);
+  }, [sdk]);
 
   function getNextRoundEndTime() {
     // Get current time in Pacific Time
