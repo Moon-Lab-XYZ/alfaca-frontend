@@ -15,13 +15,17 @@ const supabase = createClient(
 );
 
 export default function useUser() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userSession = session;
   useEffect(() => {
     if (userSession) {
       mutate('currentUser');
     }
-  }, [userSession]);
+
+    if (status === 'authenticated') {
+      mutate('currentUser');
+    }
+  }, [userSession, status]);
 
   async function fetchCurrentUser(apiURL: string) {
     if (!userSession) return null;

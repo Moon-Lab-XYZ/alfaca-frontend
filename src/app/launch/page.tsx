@@ -83,7 +83,7 @@ const Launch = () => {
       setIsSDKLoaded(true);
       load();
     }
-  }, [isSDKLoaded]);
+  }, [sdk]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();

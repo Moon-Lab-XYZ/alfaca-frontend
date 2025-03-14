@@ -2,7 +2,7 @@
 
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { CoinCard } from "@/components/coin-card";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import sdk, {
   AddFrame,
   FrameNotificationDetails,
@@ -71,15 +71,48 @@ const Index = () => {
     }
   });
 
+  const { data: session, status } = useSession();
+
+  const getNonce = useCallback(async () => {
+    const nonce = await getCsrfToken();
+    if (!nonce) throw new Error("Unable to generate nonce");
+    return nonce;
+  }, []);
+
   useEffect(() => {
     const load = async () => {
-      console.log('load');
-      const context = await sdk.context;
       sdk.actions.ready();
 
-      if (context && context.client.added === false) {
+      if (status !== "authenticated") {
+        await authenticate();
+      }
+    };
+    const authenticate = async () => {
+      try {
+        const result = await sdk.actions.signIn({
+          nonce: await getNonce(),
+        });
+        const response = await signIn("credentials", {
+          message: result.message,
+          signature: result.signature,
+          redirect: false,
+        });
+      } catch (e) {
+        console.log("Failed to authenticate: ", e);
+      }
+    }
+
+    if (sdk && !isSDKLoaded.current) {
+      isSDKLoaded.current = true;
+      load();
+    }
+  }, [sdk]);
+
+  useEffect(() => {
+    const requestAddFrame = async () => {
+      const context = await sdk.context;
+      if (context && context.client.added === false && user) {
         const result = await sdk.actions.addFrame();
-        console.log(result);
         if (result.notificationDetails && user) {
           await fetch('/api/register-notifications', {
             method: 'POST',
@@ -93,12 +126,13 @@ const Index = () => {
           });
         }
       }
-    };
-    if (sdk && !isSDKLoaded.current) {
-      isSDKLoaded.current = true;
-      load();
     }
-  }, [sdk]);
+
+    if (sdk && user) {
+      requestAddFrame();
+    }
+
+  }, [sdk, user])
 
   function getNextRoundEndTime() {
     // Get current time in Pacific Time

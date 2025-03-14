@@ -20,14 +20,10 @@ export async function POST(request: NextRequest) {
   const url = params.url;
   const token = params.token;
 
-  console.log(params);
-
   const { error } = await supabase.from('users').update({
     notification_token: token,
     notification_url: url,
   }).eq('id', session.user.uid);
-
-  console.log(error);
 
   return NextResponse.json({ message: "✅ Notification URL and Token updated" });
 }

@@ -4,7 +4,7 @@ import { BottomNav } from "@/components/ui/bottom-nav";
 import { ProfileCoinCard } from "@/components/profile-coin-card";
 import { CreatorInfo } from "@/components/creator-info";
 import { pastelGradients } from "@/lib/coin-card-utils";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { signIn, getCsrfToken } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
@@ -21,7 +21,8 @@ const supabase = createClient(
 );
 
 const Profile = () => {
-  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  const isSDKLoaded = useRef(false);
+  const { data: user } = useUser();
 
   const creatorGradient = pastelGradients[0];
 
@@ -99,15 +100,68 @@ const Profile = () => {
     };
   }, []);
 
+  const { data: session, status } = useSession();
+
+  const getNonce = useCallback(async () => {
+    const nonce = await getCsrfToken();
+    if (!nonce) throw new Error("Unable to generate nonce");
+    return nonce;
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       sdk.actions.ready();
+
+      if (status !== "authenticated") {
+        await authenticate();
+      }
     };
-    if (sdk && !isSDKLoaded) {
-      setIsSDKLoaded(true);
+    const authenticate = async () => {
+      try {
+        const result = await sdk.actions.signIn({
+          nonce: await getNonce(),
+        });
+        const response = await signIn("credentials", {
+          message: result.message,
+          signature: result.signature,
+          redirect: false,
+        });
+      } catch (e) {
+        console.log("Failed to authenticate: ", e);
+      }
+    }
+
+    if (sdk && !isSDKLoaded.current) {
+      isSDKLoaded.current = true;
       load();
     }
   }, [sdk]);
+
+  useEffect(() => {
+    const requestAddFrame = async () => {
+      const context = await sdk.context;
+      if (context && context.client.added === false && user) {
+        const result = await sdk.actions.addFrame();
+        if (result.notificationDetails && user) {
+          await fetch('/api/register-notifications', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: result.notificationDetails.url,
+              token: result.notificationDetails.token,
+            }),
+          });
+        }
+      }
+    }
+
+    if (sdk && user) {
+      requestAddFrame();
+    }
+
+  }, [sdk, user])
 
   return (
     <div className="min-h-screen bg-[#000000] pb-20">
