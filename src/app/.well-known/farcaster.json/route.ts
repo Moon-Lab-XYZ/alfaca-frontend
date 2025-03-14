@@ -22,6 +22,7 @@ export async function GET() {
     },
   };
 
+  // https://2bcc4c590e78.ngrok.app
   // const config = {
   //   "accountAssociation": {
   //     "header": "eyJmaWQiOjU3NywidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGQ0NTBCRjcwOWRjMGM5MjBEZDNFNjZkRDFiOTI0NzdkMThhMTE0OUQifQ",
