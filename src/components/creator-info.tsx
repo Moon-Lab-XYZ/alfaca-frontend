@@ -6,6 +6,7 @@ interface CreatorInfoProps {
   username: string;
   image: string;
   volume24h: number;
+  volumeCurrentRound: number;
   gradient: string;
   rank?: number;
   onClick: (e: React.MouseEvent) => void;
@@ -15,6 +16,7 @@ export const CreatorInfo = ({
   username,
   image,
   volume24h,
+  volumeCurrentRound,
   gradient,
   rank,
   onClick
@@ -40,8 +42,8 @@ export const CreatorInfo = ({
           @{username}
         </span>
         <div className="flex items-center gap-1.5">
-          <span className="text-sm text-[#00FF03]">{formatVolume(volume24h)}</span>
-          <span className="text-sm text-white/50">Last 24h Vol</span>
+          <span className="text-sm text-[#00FF03]">{formatVolume(volumeCurrentRound)}</span>
+          <span className="text-sm text-white/50">Daily Volume</span>
         </div>
       </div>
     </div>

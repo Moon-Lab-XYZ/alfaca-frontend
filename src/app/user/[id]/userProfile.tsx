@@ -129,6 +129,7 @@ const Profile = () => {
                 username={userWithRank ? userWithRank.farcaster_username : ''}
                 image={userWithRank ? userWithRank.avatar_url: "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
                 volume24h={userWithRank ? userWithRank.total_txn_vol_last_24h : 0}
+                volumeCurrentRound={userWithRank ? userWithRank.total_txn_vol_current_round : 0}
                 gradient={creatorGradient}
                 rank={userWithRank ? userWithRank.rank : 'N/A'}
                 onClick={() => {}}

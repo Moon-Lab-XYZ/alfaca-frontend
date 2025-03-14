@@ -178,6 +178,7 @@ const Profile = () => {
             username={userContext ? userContext.username : "you"}
             image={userContext ? userContext.pfpUrl: "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
             volume24h={user?.user ? user.user.total_txn_vol_last_24h : 0}
+            volumeCurrentRound={user?.user ? user.user.total_txn_vol_current_round : 0}
             gradient={creatorGradient}
             rank={userWithRank ? userWithRank.rank : 'N/A'}
             onClick={() => {}}
