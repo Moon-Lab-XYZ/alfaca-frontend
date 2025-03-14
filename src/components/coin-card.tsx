@@ -13,6 +13,7 @@ interface CoinCardProps {
   farcaster_username: string;
   avatar_url: string;
   total_txn_vol_last_24h: number;
+  total_txn_vol_current_round: number;
   token_count: number;
   tokens: any;
   simplified?: boolean;
@@ -25,6 +26,7 @@ export const CoinCard = ({
   farcaster_username,
   avatar_url,
   total_txn_vol_last_24h,
+  total_txn_vol_current_round,
   token_count,
   tokens,
   rank,
@@ -88,6 +90,7 @@ export const CoinCard = ({
           username={farcaster_username}
           image={avatar_url}
           volume24h={total_txn_vol_last_24h}
+          volumeCurrentRound={total_txn_vol_current_round}
           gradient={avatarGradient}
           onClick={handleCreatorClick}
         />
