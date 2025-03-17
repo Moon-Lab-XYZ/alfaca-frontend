@@ -11,7 +11,7 @@ export async function GET() {
     },
     frame: {
       version: "1",
-      name: "Alfaca",
+      name: "Alfaca - Launch Your Coin",
       iconUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//alfaca.png`,
       homeUrl: appUrl,
       imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image.png`,
