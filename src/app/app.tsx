@@ -205,7 +205,7 @@ const Index = () => {
                 🏆<span className="text-white">🦙</span>DAILY PRIZE POOL <span className="text-white">🦙</span>🏆
               </span>
               <div className="font-bold text-3xl text-white">
-                ${currentRound ? (currentRound.prize_pool_amount_usd + DAILY_PRIZE_POOL_BASE_AMOUNT).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : DAILY_PRIZE_POOL_BASE_AMOUNT}
+                ~${currentRound ? (currentRound.prize_pool_amount_usd + DAILY_PRIZE_POOL_BASE_AMOUNT).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : DAILY_PRIZE_POOL_BASE_AMOUNT}
               </div>
               <div className="text-md text-white/50 mt-1 flex items-center justify-center gap-0.5">
                 {formatTime(timeLeft)}
