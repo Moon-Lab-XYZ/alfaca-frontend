@@ -20,7 +20,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 );
 
-const DAILY_PRIZE_POOL_BASE_AMOUNT = 250;
+const DAILY_PRIZE_POOL_BASE_AMOUNT = 100;
 
 const Index = () => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
