@@ -200,17 +200,6 @@ const Index = () => {
       <div className="bg-[#111111] shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
         <div className="max-w-md mx-auto px-4">
           <div className="py-4 text-center">
-            <div>
-              <span className="text-white/70 text-lg flex items-center justify-center gap-2">
-                🏆<span className="text-white">🦙</span>DAILY PRIZE POOL <span className="text-white">🦙</span>🏆
-              </span>
-              <div className="font-bold text-3xl text-white">
-                ~${currentRound ? (currentRound.prize_pool_amount_usd + DAILY_PRIZE_POOL_BASE_AMOUNT).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : DAILY_PRIZE_POOL_BASE_AMOUNT}
-              </div>
-              <div className="text-md text-white/50 mt-1 flex items-center justify-center gap-0.5">
-                {formatTime(timeLeft)}
-              </div>
-            </div>
           </div>
         </div>
       </div>
