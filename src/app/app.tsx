@@ -14,13 +14,12 @@ import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
 import moment from 'moment-timezone';
 import useUser from "@/lib/user";
+import { SimpleCoinCard } from "@/components/simple-coin-card";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 );
-
-const DAILY_PRIZE_POOL_BASE_AMOUNT = 10;
 
 const Index = () => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -61,9 +60,13 @@ const Index = () => {
     error: leaderboardError,
     mutate: mutateLeaderboard,
     isLoading: leaderboardLoading,
-  } = useSWR(`leaderboard`, async () => {
+  } = useSWR(`trendingTokens`, async () => {
     try {
-      const { data: leaderboard, error } = await supabase.rpc('get_top_users_and_tokens');
+      const { data: leaderboard, error } = await supabase.from('tokens')
+        .select('*,users(*)')
+        .order('txn_vol_last_24h', { ascending: false })
+        .limit(50);
+      console.log(leaderboard);
       if (error) console.error(error);
       return leaderboard;
     } catch (error) {
@@ -206,7 +209,7 @@ const Index = () => {
 
       <div className="max-w-md mx-auto px-4 mt-4 space-y-3 pb-12">
         {leaderboard ? leaderboard.map((coin: any, index: any) => (
-          <CoinCard key={index} {...coin} />
+          <SimpleCoinCard key={index} {...coin} />
         )) : null}
       </div>
       <BottomNav />
