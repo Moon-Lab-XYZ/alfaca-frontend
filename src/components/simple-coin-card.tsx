@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Copy, ExternalLink, Sparkles, AtSign, Users } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import sdk from "@farcaster/frame-sdk";
+import { useRouter } from "next/navigation";
 
 interface SimpleCoinCardProps {
+  id: number;
   name: string;
   symbol: string;
   image: string;
@@ -16,6 +18,7 @@ interface SimpleCoinCardProps {
 }
 
 export const SimpleCoinCard = ({
+  id,
   name,
   symbol,
   image,
@@ -26,6 +29,7 @@ export const SimpleCoinCard = ({
   users,
 }: SimpleCoinCardProps) => {
   const { toast } = useToast();
+  const router = useRouter();
 
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -38,10 +42,6 @@ export const SimpleCoinCard = ({
     }
     return `$${number.toFixed(1)}`;
   };
-
-  const handleCardClick = () => {
-
-  }
 
   const handleCopyAddress = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -63,13 +63,12 @@ export const SimpleCoinCard = ({
   };
 
   const handleStealClick = () => {
-
+    router.push(`/token/${id}/steal`);
   }
 
   return (
     <div
-      className="bg-[#1a1a1a] backdrop-blur-md rounded-2xl p-4 shadow-sm border border-white/5 transition-all duration-300 hover:shadow-md animate-fade-up cursor-pointer"
-      onClick={handleCardClick}
+      className="bg-[#1a1a1a] backdrop-blur-md rounded-2xl p-4 shadow-sm border border-white/5 transition-all duration-300 hover:shadow-md animate-fade-up"
     >
       <div className="flex items-start gap-4">
         <div
@@ -122,13 +121,13 @@ export const SimpleCoinCard = ({
             >
               <ExternalLink size={14} /> DEX
             </button>
-            <button
-              onClick={handleStealClick}
-              className="flex items-center justify-center gap-1.5 bg-[#E5DEFF] rounded-lg py-1.5 px-3 text-xs text-black font-medium hover:bg-[#E5DEFF]/90 transition-all duration-300 hover:scale-105"
-            >
-              Steal <Sparkles size={14} className="text-[#FFB800] ml-1 animate-sword-glow" />
-            </button>
           </div>
+          <button
+            onClick={handleStealClick}
+            className="flex items-center justify-center gap-1.5 bg-[#E5DEFF] rounded-lg py-1.5 px-3 text-md text-black font-medium hover:bg-[#E5DEFF]/90 transition-all duration-300 hover:scale-105 w-full mt-3"
+          >
+            Steal <Sparkles size={14} className="text-[#FFB800] ml-1 animate-sword-glow" />
+          </button>
         </div>
       </div>
     </div>

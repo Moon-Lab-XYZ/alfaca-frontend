@@ -66,7 +66,6 @@ const Index = () => {
         .select('*,users(*)')
         .order('txn_vol_last_24h', { ascending: false })
         .limit(50);
-      console.log(leaderboard);
       if (error) console.error(error);
       return leaderboard;
     } catch (error) {
@@ -113,21 +112,25 @@ const Index = () => {
 
   useEffect(() => {
     const requestAddFrame = async () => {
-      const context = await sdk.context;
-      if (context && context.client.added === false && user) {
-        const result = await sdk.actions.addFrame();
-        if (result.notificationDetails && user) {
-          await fetch('/api/register-notifications', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: result.notificationDetails.url,
-              token: result.notificationDetails.token,
-            }),
-          });
+      try {
+        const context = await sdk.context;
+        if (context && context.client.added === false && user) {
+          const result = await sdk.actions.addFrame();
+          if (result.notificationDetails && user) {
+            await fetch('/api/register-notifications', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                url: result.notificationDetails.url,
+                token: result.notificationDetails.token,
+              }),
+            });
+          }
         }
+      } catch (error) {
+        console.log(error);
       }
     }
 

@@ -205,7 +205,7 @@ const Profile = () => {
                   </div>
                  :
                 <div className="font-bold text-3xl text-[#E5DEFF]">
-                  ~${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                  ~{totalEarnings === 0 ? '' : `$${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </div>
               }
             </div>
