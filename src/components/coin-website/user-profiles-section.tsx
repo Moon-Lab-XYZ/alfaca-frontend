@@ -75,9 +75,9 @@ export const UserProfilesSection = ({
   const handleShuffleClick = () => {
     if (!shuffleUsed) {
       setIsShuffling(true);
-      
+
       setAnimationKey(prev => prev + 1);
-      
+
       setTimeout(() => {
         shuffleUsers();
         setIsShuffling(false);
@@ -104,22 +104,22 @@ export const UserProfilesSection = ({
             <Sparkles className="text-yellow-400 animate-pulse w-12 h-12 opacity-70" />
           </div>
         )}
-        
+
         <CardContent className="p-6">
           <div className="grid grid-cols-3 gap-4">
             {usersWithStats.map((user, index) => (
               <div key={index} className="flex flex-col items-center">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <div 
+                    <div
                       className="transition-all duration-300 cursor-pointer"
                       onClick={() => handleUserClick(index)}
                     >
                       <div className="relative">
                         <div>
-                          <CreatorAvatar 
-                            username={user.username} 
-                            image="https://via.placeholder.com/150" 
+                          <CreatorAvatar
+                            username={user.username}
+                            image="https://via.placeholder.com/150"
                             gradient={user.gradient}
                             size="md"
                             type="creator"
@@ -139,9 +139,9 @@ export const UserProfilesSection = ({
                     <div className="flex flex-col space-y-3">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-[#E5DEFF]">@{user.username}</h3>
-                        <CreatorAvatar 
-                          username={user.username} 
-                          image="https://via.placeholder.com/150" 
+                        <CreatorAvatar
+                          username={user.username}
+                          image="https://via.placeholder.com/150"
                           gradient={user.gradient}
                           size="sm"
                           type="creator"
@@ -172,7 +172,7 @@ export const UserProfilesSection = ({
             ))}
           </div>
         </CardContent>
-        
+
         <CardFooter className="p-6 pt-0">
           <button
             onClick={handleSteal}
@@ -191,16 +191,16 @@ export const UserProfilesSection = ({
         </CardFooter>
       </Card>
 
-      <button
+      {/* <button
         onClick={handleShuffleClick}
         disabled={shuffleUsed || isShuffling}
-        className={`flex items-center justify-center gap-2 w-full mt-4 bg-transparent 
-          text-white/50 hover:text-white/80 disabled:opacity-30 disabled:hover:text-white/50 
+        className={`flex items-center justify-center gap-2 w-full mt-4 bg-transparent
+          text-white/50 hover:text-white/80 disabled:opacity-30 disabled:hover:text-white/50
           rounded-xl px-6 py-2 font-medium transition-all duration-200 font-['Outfit']
           ${isShuffling ? 'animate-pulse' : ''}`}
       >
         Shuffle <Shuffle className={isShuffling ? 'animate-spin' : ''} size={16} />
-      </button>
+      </button> */}
     </div>
   );
 };

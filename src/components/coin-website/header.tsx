@@ -21,7 +21,7 @@ export const CoinWebsiteHeader = ({ ticker }: { ticker: string }) => {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-xl font-medium text-white">
-              🥷 Stolen 🥷
+              🥷 Steal ${ticker} 🥷
             </h1>
           </div>
           <div className="w-10"></div> {/* This creates balance for the back button */}

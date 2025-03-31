@@ -16,9 +16,16 @@ import {
   AlertDialogPortal
 } from "@/components/ui/alert-dialog";
 import { Copy, ExternalLink, X } from "lucide-react";
+import useSWR from "swr";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+);
 
 const CoinWebsite = () => {
-  const { ticker } = useParams();
+  const { id } = useParams();
   const [timeLeft, setTimeLeft] = useState(1440); // 24 hours in minutes
   const { toast } = useToast();
   const [showShareModal, setShowShareModal] = useState(false);
@@ -28,9 +35,29 @@ const CoinWebsite = () => {
   const [pageLoaded, setPageLoaded] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
 
+  const {
+    data: tokenData,
+    error: tokenDataError,
+    mutate: mutateTokenData,
+    isLoading: tokenDataLoading,
+  } = useSWR(`tokenData-${id}`, async () => {
+    try {
+      const { data: tokenData, error } = await supabase.from('tokens')
+        .select('*,users(*)')
+        .eq('id', id)
+        .limit(1)
+        .single();
+      if (error) console.error(error);
+      console.log(tokenData);
+      return tokenData;
+    } catch (error) {
+      console.error('Error fetching token dat', error);
+    }
+  });
+
   const [coinDetails] = useState({
     name: "Zerebro",
-    ticker: ticker || "ZEREBRO",
+    ticker: id || "ZEREBRO",
     image: "https://via.placeholder.com/150",
     creator: {
       username: "coinmaster",
@@ -166,7 +193,7 @@ const CoinWebsite = () => {
     if (cooldownActive) return;
 
     // Show requirement modal instead of immediately proceeding
-    setShowRequirementModal(true);
+    // setShowRequirementModal(true);
   };
 
   const handleCloseModal = () => {
@@ -183,7 +210,7 @@ const CoinWebsite = () => {
   };
 
   const handleDexScreener = () => {
-    window.open(`https://dexscreener.com/ethereum/${(ticker as any)?.toLowerCase()}`, '_blank');
+    window.open(`https://dexscreener.com/ethereum/${(id as any)?.toLowerCase()}`, '_blank');
   };
 
   const proceedWithSteal = () => {
@@ -197,13 +224,21 @@ const CoinWebsite = () => {
     });
   };
 
+  if (!tokenData || tokenDataLoading) {
+    return (
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#000000] pb-20">
-      <CoinWebsiteHeader ticker={coinDetails.ticker as any} />
+      <CoinWebsiteHeader ticker={tokenData.symbol as any} />
 
       <div className={`max-w-md mx-auto px-4 mt-3 transition-opacity duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
         <PrizePoolCard
-          ticker={coinDetails.ticker as any}
+          ticker={tokenData.symbol as any}
           initialPrizePool={126431.10}
           timeLeft={timeLeft}
         />
@@ -215,7 +250,7 @@ const CoinWebsite = () => {
           cooldownActive={cooldownActive}
           cooldownTimeLeft={cooldownTimeLeft}
           shuffleUsed={shuffleUsed}
-          ticker={ticker as any || "MTK"}
+          ticker={tokenData.symbol}
         />
       </div>
 
@@ -250,7 +285,7 @@ const CoinWebsite = () => {
                 Coin Required
               </AlertDialogTitle>
               <AlertDialogDescription className="text-center text-white/80 mt-2">
-                You must hold at least 100,000 ${ticker} to play
+                You must hold at least 100,000 ${id} to play
               </AlertDialogDescription>
 
               <div className="flex justify-center gap-3 mt-6">

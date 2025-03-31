@@ -33,7 +33,7 @@ export const PrizePoolCard = ({ ticker, initialPrizePool, timeLeft }: PrizePoolC
         <span className="text-white">{hours}</span>
         <span className="text-white/50">h </span>
         <span className="text-white">{Math.floor(mins)}</span>
-        <span className="text-white/50">min </span> 
+        <span className="text-white/50">min </span>
         <span className="text-white">{secs}</span>
         <span className="text-white/50">sec remaining</span>
       </>
@@ -58,7 +58,7 @@ export const PrizePoolCard = ({ ticker, initialPrizePool, timeLeft }: PrizePoolC
       <div className="py-6 px-4 text-center">
         <div>
           <span className="text-white text-lg flex items-center justify-center gap-2">
-            💎 ${ticker} 💎
+            💎 ${ticker} Prize Pool 💎
           </span>
           <div className="font-bold text-4xl text-white mt-3">
             ${prizePool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -66,7 +66,7 @@ export const PrizePoolCard = ({ ticker, initialPrizePool, timeLeft }: PrizePoolC
           <div className="text-sm text-white/50 mt-2 flex items-center justify-center gap-0.5">
             {formatTime(timeLeft)}
           </div>
-          
+
           <div className="flex justify-center gap-3 mt-4">
             <button
               onClick={handleCopyAddress}
