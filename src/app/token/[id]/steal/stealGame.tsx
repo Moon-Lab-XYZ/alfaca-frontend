@@ -6,7 +6,6 @@ import { CoinWebsiteHeader } from "@/components/coin-website/header";
 import { useToast } from "@/hooks/use-toast";
 import { PrizePoolCard } from "@/components/coin-website/prize-pool-card";
 import { UserProfilesSection } from "@/components/coin-website/user-profiles-section";
-import { ShareModal } from "@/components/coin-website/share-modal";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,6 +19,7 @@ import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
 import { PlayersLeaderboard } from "@/components/coin-website/players-leaderboard";
 import sdk from "@farcaster/frame-sdk";
+import useUser from "@/lib/user";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -30,12 +30,15 @@ const CoinWebsite = () => {
   const { id } = useParams();
   const [timeLeft, setTimeLeft] = useState(1440); // 24 hours in minutes
   const { toast } = useToast();
-  const [showShareModal, setShowShareModal] = useState(false);
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [shuffleUsed, setShuffleUsed] = useState(false);
   const [pageLoaded, setPageLoaded] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
+
+  const { data: user } = useUser();
+
+  console.log(user);
 
   const {
     data: tokenData,
@@ -201,14 +204,14 @@ const CoinWebsite = () => {
           : null
         }
 
-        <PlayersLeaderboard
-          ticker={tokenData.symbol}
-          currentUser={{
-            username: "warpcastadmin",
-            gradient: "linear-gradient(90deg, hsla(24, 100%, 83%, 1) 0%, hsla(341, 91%, 68%, 1) 100%)",
-            tokenHolding: 125,
-          }}
-        />
+        {
+          user ?
+          <PlayersLeaderboard
+            ticker={tokenData.symbol}
+            currentUser={user.user}
+          />
+          : null
+        }
       </div>
 
       {/* <ShareModal

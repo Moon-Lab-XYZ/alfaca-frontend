@@ -5,21 +5,14 @@ import { Trophy, Users } from "lucide-react";
 import { CreatorAvatar } from "@/components/creator-avatar";
 import { Separator } from "@/components/ui/separator";
 
-interface Player {
-  username: string;
-  tokenHolding: number;
-  gradient: string;
-  position?: number;
-}
-
 interface PlayersLeaderboardProps {
   ticker: string;
-  currentUser?: Player;
+  currentUser?: any;
 }
 
 export const PlayersLeaderboard = ({ ticker, currentUser }: PlayersLeaderboardProps) => {
   // Sample player data - in a real app this would come from an API
-  const [players] = useState<Player[]>([
+  const [players] = useState<any[]>([
     {
       username: "warpcastadmin",
       gradient: "linear-gradient(90deg, hsla(24, 100%, 83%, 1) 0%, hsla(341, 91%, 68%, 1) 100%)",
@@ -87,15 +80,14 @@ export const PlayersLeaderboard = ({ ticker, currentUser }: PlayersLeaderboardPr
             <div className="flex items-center gap-2 flex-1">
               <CreatorAvatar
                 username={currentUser.username}
-                image=""
-                gradient={currentUser.gradient}
+                image={currentUser.avatar_url}
                 size="sm"
                 type="creator"
               />
               <span className="text-white">You</span>
             </div>
             <div className="text-white font-medium ml-auto">
-              🦙{currentUser.tokenHolding.toLocaleString()}
+              🦙
             </div>
           </div>
         </div>
@@ -124,7 +116,6 @@ export const PlayersLeaderboard = ({ ticker, currentUser }: PlayersLeaderboardPr
                     <CreatorAvatar
                       username={player.username}
                       image=""
-                      gradient={player.gradient}
                       size="sm"
                       type="creator"
                     />
