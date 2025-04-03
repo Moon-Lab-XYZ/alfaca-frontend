@@ -17,7 +17,7 @@ interface StealCandidate {
   username: string;
   avatar_url: string;
   farcaster_id: number;
-  points?: number;
+  points: number;
   source: "warpcast" | "top_points" | "recent_theft" | "followee" | "random";
 }
 
@@ -97,19 +97,20 @@ export async function GET(request: NextRequest) {
             .single();
 
           if (winnerData) {
+            // Ensure the candidate has a player_points entry for this round
+            const pointsData = await ensurePlayerPointsEntry(currentRound.id, winnerData.id);
+
             candidates.push({
               id: winnerData.id.toString(),
               username: winnerData.farcaster_username,
               avatar_url: winnerData.avatar_url,
               farcaster_id: winnerData.farcaster_id,
+              points: pointsData?.points || 0,
               source: "warpcast"
             });
 
             // logging
-            console.log("Adding farcaster top creator candidate: ", winnerData.farcaster_username);
-
-            // Ensure the candidate has a player_points entry for this round
-            await ensurePlayerPointsEntry(currentRound.id, winnerData.id);
+            console.log("Adding farcaster top creator candidate: ", winnerData.farcaster_username, "with points:", pointsData?.points);
           }
         }
       }
@@ -145,19 +146,20 @@ export async function GET(request: NextRequest) {
           const userObj = Array.isArray(userData) ? userData[0] : userData;
 
           if (userObj && userObj.id && userObj.id.toString() !== userId.toString()) {
+            // Get the latest points from the database
+            const latestPoints = await getPlayerPoints(currentRound.id, userObj.id);
+
             candidates.push({
               id: userObj.id.toString(),
               username: userObj.farcaster_username || "Unknown",
               avatar_url: userObj.avatar_url || "",
               farcaster_id: userObj.farcaster_id || 0,
-              points: pointsData.points,
+              points: latestPoints || pointsData.points,
               source: "top_points"
             });
 
-            await ensurePlayerPointsEntry(currentRound.id, userObj.id);
-
             // logging
-            console.log("Adding top point holder candidate: ", userObj.farcaster_username);
+            console.log("Adding top point holder candidate: ", userObj.farcaster_username, "with points:", latestPoints || pointsData.points);
 
             // We only need one candidate from this source
             break;
@@ -165,16 +167,13 @@ export async function GET(request: NextRequest) {
         }
       } else {
         if (userData && userData.farcaster_id) {
-          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id);
+          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id, currentRound.id);
           if (followeeCandidate) {
             candidates.push(followeeCandidate);
 
-            // Ensure the candidate has a player_points entry for this round
-            await ensurePlayerPointsEntry(currentRound.id, followeeCandidate.id);
+            // logging
+            console.log("No top point holder candidate, adding followee candidate: ", followeeCandidate?.username, "with points:", followeeCandidate?.points);
           }
-
-          // logging
-          console.log("No top point holder candidate, adding followee candidate: ", followeeCandidate?.username);
         }
       }
     } catch (error) {
@@ -214,19 +213,20 @@ export async function GET(request: NextRequest) {
           const userObj = Array.isArray(userData) ? userData[0] : userData;
 
           if (userObj && userObj.id) {
+            // Ensure the candidate has a player_points entry for this round and get points
+            const pointsData = await ensurePlayerPointsEntry(currentRound.id, userObj.id);
+
             candidates.push({
               id: userObj.id.toString(),
               username: userObj.farcaster_username || "Unknown",
               avatar_url: userObj.avatar_url || "",
               farcaster_id: userObj.farcaster_id || 0,
+              points: pointsData?.points || 0,
               source: "recent_theft"
             });
 
             // logging
-            console.log("Adding recent theft candidate: ", userObj.farcaster_username);
-
-            // Ensure the candidate has a player_points entry for this round
-            await ensurePlayerPointsEntry(currentRound.id, userObj.id);
+            console.log("Adding recent theft candidate: ", userObj.farcaster_username, "with points:", pointsData?.points);
 
             // We only need one candidate from this source
             break;
@@ -234,16 +234,13 @@ export async function GET(request: NextRequest) {
         }
       } else {
         if (userData && userData.farcaster_id) {
-          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id);
+          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id, currentRound.id);
           if (followeeCandidate) {
             candidates.push(followeeCandidate);
 
-            // Ensure the candidate has a player_points entry for this round
-            await ensurePlayerPointsEntry(currentRound.id, followeeCandidate.id);
+            // logging
+            console.log("No recent theft candidate, adding followee candidate: ", followeeCandidate?.username, "with points:", followeeCandidate?.points);
           }
-
-          // logging
-          console.log("No recent theft candidate, adding followee candidate: ", followeeCandidate?.username);
         }
       }
     } catch (error) {
@@ -265,16 +262,20 @@ export async function GET(request: NextRequest) {
         const user = randomUsers[0];
 
         if (user && user.id) {
+          // Ensure the candidate has a player_points entry for this round and get points
+          const pointsData = await ensurePlayerPointsEntry(currentRound.id, user.id);
+
           candidates.push({
             id: user.id.toString(),
             username: user.farcaster_username || "Unknown",
             avatar_url: user.avatar_url || "",
             farcaster_id: user.farcaster_id || 0,
+            points: pointsData?.points || 0,
             source: "random"
           });
 
-          // Ensure the candidate has a player_points entry for this round
-          await ensurePlayerPointsEntry(currentRound.id, user.id);
+          // logging
+          console.log("Adding random candidate: ", user.farcaster_username, "with points:", pointsData?.points);
         }
       }
     }
@@ -287,6 +288,28 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching steal candidates:", error);
     return NextResponse.json({ error: "Failed to fetch steal candidates" }, { status: 500 });
+  }
+}
+
+// Helper function to get player points
+async function getPlayerPoints(roundId: number, userId: string | number): Promise<number | null> {
+  try {
+    const { data, error } = await supabase
+      .from('sg_player_points')
+      .select('points')
+      .eq('round_id', roundId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching player points:", error);
+      return null;
+    }
+
+    return data?.points || null;
+  } catch (error) {
+    console.error("Error in getPlayerPoints:", error);
+    return null;
   }
 }
 
@@ -360,43 +383,49 @@ async function getOrCreateRound(tokenId: string) {
 }
 
 // Helper function to ensure a player has a points entry for the current round
-async function ensurePlayerPointsEntry(roundId: number, userId: string | number) {
+async function ensurePlayerPointsEntry(roundId: number, userId: string | number): Promise<{ points: number } | null> {
   try {
     // Check if an entry already exists
     const { data: existingEntry } = await supabase
       .from('sg_player_points')
-      .select('id')
+      .select('id, points')
       .eq('round_id', roundId)
       .eq('user_id', userId)
       .single();
 
     if (existingEntry) {
-      // Entry already exists, no need to create one
-      return;
+      // Entry already exists, return the points
+      return { points: existingEntry.points };
     }
 
     // Create a new entry with starting points
-    const { error: createError } = await supabase
+    const { data: newEntry, error: createError } = await supabase
       .from('sg_player_points')
       .insert([
         {
           user_id: userId,
           round_id: roundId,
+          is_eligible: true
         }
-      ]);
+      ])
+      .select('points')
+      .single();
 
     if (createError) {
       console.error("Error creating player points entry:", createError);
+      return null;
     } else {
-      console.log(`Created points entry for user ${userId} in round ${roundId}`);
+      console.log(`Created points entry for user ${userId} in round ${roundId} with ${newEntry.points} points`);
+      return newEntry;
     }
   } catch (error) {
     console.error("Error in ensurePlayerPointsEntry:", error);
+    return null;
   }
 }
 
 // Helper function to get a random followee as a candidate
-async function getRandomFolloweeCandidate(farcasterId: string): Promise<StealCandidate | null> {
+async function getRandomFolloweeCandidate(farcasterId: string, roundId: number): Promise<StealCandidate | null> {
   try {
     // Get the user's Farcaster ID
     const { data: userData } = await supabase
@@ -455,11 +484,15 @@ async function getRandomFolloweeCandidate(farcasterId: string): Promise<StealCan
       return null;
     }
 
+    // Ensure the followee has a player_points entry and get points
+    const pointsData = await ensurePlayerPointsEntry(roundId, followeeId);
+
     return {
       id: followeeData.id.toString(),
       username: followeeData.farcaster_username || "Unknown",
       avatar_url: followeeData.avatar_url || "",
       farcaster_id: followeeData.farcaster_id || 0,
+      points: pointsData?.points || 0,
       source: "followee"
     };
   } catch (error) {

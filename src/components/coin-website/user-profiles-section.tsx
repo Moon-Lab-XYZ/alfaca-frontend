@@ -67,7 +67,7 @@ export const UserProfilesSection = ({
                     />
                     <p className="text-white text-lg font-medium text-ellipsis line-clamp-1">@{user.username}</p>
                     <p className="text-[#E5DEFF] text-base font-semibold">
-                      {user.tokenHolding?.toLocaleString()} 🦙 {ticker}
+                      {user.tokenHolding?.toLocaleString()} 🦙 {user.points}
                     </p>
                   </div>
                 </div>
