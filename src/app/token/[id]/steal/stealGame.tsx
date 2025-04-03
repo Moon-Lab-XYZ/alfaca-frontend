@@ -38,8 +38,6 @@ const CoinWebsite = () => {
 
   const { data: user } = useUser();
 
-  console.log(user);
-
   const {
     data: tokenData,
     error: tokenDataError,
@@ -66,6 +64,7 @@ const CoinWebsite = () => {
     error: stealCandidatesError,
     mutate: mutateStealCandidates,
     isLoading: stealCandidatesLoading,
+    isValidating: stealCandidatesValidating,
   } = useSWR(`stealCandidates-${id}`, async () => {
     console.log('stealCandidates');
     try {
@@ -74,9 +73,11 @@ const CoinWebsite = () => {
           method: 'GET',
         });
       const stealCandidates = await data.json();
+      console.log(stealCandidates)
       return stealCandidates;
     } catch (error) {
-      console.error('Error fetching token dat', error);
+      console.error('Error fetching token data', error);
+      return null;
     }
   }, {
     revalidateOnFocus: false,
@@ -192,7 +193,7 @@ const CoinWebsite = () => {
         />
 
         {
-          stealCandidates && !stealCandidatesLoading ?
+          stealCandidates && !stealCandidatesLoading && !stealCandidatesValidating ?
           <UserProfilesSection
             selectedUsers={stealCandidates}
             handleSteal={handleSteal}
@@ -201,7 +202,10 @@ const CoinWebsite = () => {
             shuffleUsed={shuffleUsed}
             ticker={tokenData.symbol}
           />
-          : null
+          :
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="w-10 h-10 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin mb-2"></div>
+          </div>
         }
 
         {

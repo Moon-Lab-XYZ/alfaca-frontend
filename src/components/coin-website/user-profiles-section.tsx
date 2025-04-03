@@ -53,7 +53,7 @@ export const UserProfilesSection = ({
       <Card className="bg-[#111111] border-[#222222] shadow-xl rounded-xl mb-6 overflow-hidden relative" key={animationKey}>
         <CardContent className="p-6">
           <div className="grid grid-cols-3 gap-4">
-            {selectedUsers.map((user, index) => (
+            {selectedUsers ? selectedUsers.map((user, index) => (
               <div key={index} className="flex flex-col items-center">
                 <div
                   className="transition-all duration-300"
@@ -61,18 +61,18 @@ export const UserProfilesSection = ({
                   <div className="flex flex-col items-center mt-2 space-y-1">
                     <CreatorAvatar
                       username={user.username}
-                      image={user.avatar_url}
+                      image={user.avatar_url ? user.avatar_url : "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
                       size="lg"
                       type="creator"
                     />
-                    <p className="text-white text-lg font-medium">@{user.username}</p>
+                    <p className="text-white text-lg font-medium text-ellipsis line-clamp-1">@{user.username}</p>
                     <p className="text-[#E5DEFF] text-base font-semibold">
                       {user.tokenHolding?.toLocaleString()} 🦙 {ticker}
                     </p>
                   </div>
                 </div>
               </div>
-            ))}
+            )) : null}
           </div>
         </CardContent>
 

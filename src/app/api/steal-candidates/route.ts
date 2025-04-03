@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from '@/auth';
+import moment from 'moment-timezone';
 
 const IMG_BASE_URL="https://wrpcd.net/cdn-cgi/image/anim=false,fit=contain,f=auto,w=336";
 
@@ -46,21 +47,13 @@ export async function GET(request: NextRequest) {
 
     console.log("Fetching steal candidates for token:", tokenId);
 
-    // Get current round for the token
-    const { data: currentRound, error: roundError } = await supabase
-      .from('sg_rounds')
-      .select('*')
-      .eq('token', tokenId)
-      .eq('status', 'ACTIVE')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Get or create the current/next round for the token
+    const currentRound = await getOrCreateRound(tokenId);
 
-    if (roundError || !currentRound) {
+    if (!currentRound) {
       return NextResponse.json({
-        error: "No active round found for this token",
-        details: roundError?.message
-      }, { status: 404 });
+        error: "Failed to get or create a round for this token"
+      }, { status: 500 });
     }
 
     const candidates: StealCandidate[] = [];
@@ -114,6 +107,9 @@ export async function GET(request: NextRequest) {
 
             // logging
             console.log("Adding farcaster top creator candidate: ", winnerData.farcaster_username);
+
+            // Ensure the candidate has a player_points entry for this round
+            await ensurePlayerPointsEntry(currentRound.id, winnerData.id);
           }
         }
       }
@@ -158,6 +154,8 @@ export async function GET(request: NextRequest) {
               source: "top_points"
             });
 
+            await ensurePlayerPointsEntry(currentRound.id, userObj.id);
+
             // logging
             console.log("Adding top point holder candidate: ", userObj.farcaster_username);
 
@@ -170,6 +168,9 @@ export async function GET(request: NextRequest) {
           const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id);
           if (followeeCandidate) {
             candidates.push(followeeCandidate);
+
+            // Ensure the candidate has a player_points entry for this round
+            await ensurePlayerPointsEntry(currentRound.id, followeeCandidate.id);
           }
 
           // logging
@@ -224,6 +225,9 @@ export async function GET(request: NextRequest) {
             // logging
             console.log("Adding recent theft candidate: ", userObj.farcaster_username);
 
+            // Ensure the candidate has a player_points entry for this round
+            await ensurePlayerPointsEntry(currentRound.id, userObj.id);
+
             // We only need one candidate from this source
             break;
           }
@@ -233,6 +237,9 @@ export async function GET(request: NextRequest) {
           const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id);
           if (followeeCandidate) {
             candidates.push(followeeCandidate);
+
+            // Ensure the candidate has a player_points entry for this round
+            await ensurePlayerPointsEntry(currentRound.id, followeeCandidate.id);
           }
 
           // logging
@@ -265,15 +272,126 @@ export async function GET(request: NextRequest) {
             farcaster_id: user.farcaster_id || 0,
             source: "random"
           });
+
+          // Ensure the candidate has a player_points entry for this round
+          await ensurePlayerPointsEntry(currentRound.id, user.id);
         }
       }
     }
+
+    // Ensure the requesting user also has a player_points entry
+    await ensurePlayerPointsEntry(currentRound.id, userId);
 
     return NextResponse.json(candidates);
 
   } catch (error) {
     console.error("Error fetching steal candidates:", error);
     return NextResponse.json({ error: "Failed to fetch steal candidates" }, { status: 500 });
+  }
+}
+
+// Helper function to get the next round end time (4PM Pacific Time)
+function getNextRoundEndTime() {
+  // Get current time in Pacific Time
+  const nowPT = moment().tz('America/Los_Angeles');
+
+  // Create 4PM PT today
+  const target4PMPT = moment.tz('America/Los_Angeles')
+    .hour(16)
+    .minute(0)
+    .second(0)
+    .millisecond(0);
+
+  // If it's already past 4PM PT, set to 4PM PT tomorrow
+  if (nowPT.isAfter(target4PMPT)) {
+    target4PMPT.add(1, 'day');
+  }
+
+  return target4PMPT;
+}
+
+// Helper function to get or create a round for a token
+async function getOrCreateRound(tokenId: string) {
+  try {
+    // Get the next round end time (4PM Pacific Time)
+    const nextRoundEndTime = getNextRoundEndTime();
+    const utcNextRoundEndTime = nextRoundEndTime.clone().utc().format();
+
+    console.log("Looking for round ending at:", utcNextRoundEndTime);
+
+    // Check if a round already exists for this token and end time
+    const { data: existingRound, error: findRoundError } = await supabase
+      .from('sg_rounds')
+      .select('*')
+      .eq('token', tokenId)
+      .eq('round_end_time', utcNextRoundEndTime)
+      .eq('status', 'ACTIVE')
+      .single();
+
+    if (!findRoundError && existingRound) {
+      console.log("Found existing round:", existingRound.id);
+      return existingRound;
+    }
+
+    // Create a new round with the next 4PM PT end time
+    const { data: newRound, error: createRoundError } = await supabase
+      .from('sg_rounds')
+      .insert([
+        {
+          token: tokenId,
+          round_end_time: utcNextRoundEndTime,
+          status: 'ACTIVE',
+        }
+      ])
+      .select()
+      .single();
+
+    if (createRoundError) {
+      console.error("Error creating new round:", createRoundError);
+      return null;
+    }
+
+    console.log("Created new round:", newRound.id, "ending at", utcNextRoundEndTime);
+    return newRound;
+  } catch (error) {
+    console.error("Error in getOrCreateRound:", error);
+    return null;
+  }
+}
+
+// Helper function to ensure a player has a points entry for the current round
+async function ensurePlayerPointsEntry(roundId: number, userId: string | number) {
+  try {
+    // Check if an entry already exists
+    const { data: existingEntry } = await supabase
+      .from('sg_player_points')
+      .select('id')
+      .eq('round_id', roundId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existingEntry) {
+      // Entry already exists, no need to create one
+      return;
+    }
+
+    // Create a new entry with starting points
+    const { error: createError } = await supabase
+      .from('sg_player_points')
+      .insert([
+        {
+          user_id: userId,
+          round_id: roundId,
+        }
+      ]);
+
+    if (createError) {
+      console.error("Error creating player points entry:", createError);
+    } else {
+      console.log(`Created points entry for user ${userId} in round ${roundId}`);
+    }
+  } catch (error) {
+    console.error("Error in ensurePlayerPointsEntry:", error);
   }
 }
 
