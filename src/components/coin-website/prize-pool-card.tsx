@@ -2,14 +2,17 @@
 import { useEffect, useState } from "react";
 import { Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import sdk from "@farcaster/frame-sdk";
 
 interface PrizePoolCardProps {
   ticker: string;
+  contractAddress: string;
+  link: string;
   initialPrizePool: number;
   timeLeft: number;
 }
 
-export const PrizePoolCard = ({ ticker, initialPrizePool, timeLeft }: PrizePoolCardProps) => {
+export const PrizePoolCard = ({ ticker, contractAddress, link, initialPrizePool, timeLeft }: PrizePoolCardProps) => {
   const [prizePool, setPrizePool] = useState(initialPrizePool);
   const { toast } = useToast();
 
@@ -41,26 +44,31 @@ export const PrizePoolCard = ({ ticker, initialPrizePool, timeLeft }: PrizePoolC
   };
 
   const handleCopyAddress = () => {
-    const address = "0x4455...cAD7";
-    navigator.clipboard.writeText(address);
+    navigator.clipboard.writeText(contractAddress);
     toast({
       description: "Contract address copied to clipboard",
       duration: 2000,
     });
   };
 
-  const handleDexScreener = () => {
-    window.open(`https://dexscreener.com/ethereum/${ticker.toLowerCase()}`, '_blank');
+  const handleDexScreener = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const context = await sdk.context;
+    if (context) {
+      await sdk.actions.openUrl(link);
+    } else {
+      window.open(link, "_blank");
+    }
   };
 
   return (
     <div className="bg-[#1A1A1A] shadow-[0_4px_20px_rgba(0,0,0,0.4)] rounded-2xl mb-8">
-      <div className="py-6 px-4 text-center">
+      <div className="py-4 px-4 text-center">
         <div>
-          <span className="text-white text-lg flex items-center justify-center gap-2">
+          {/* <span className="text-white text-lg flex items-center justify-center gap-2">
             💎 ${ticker} Prize Pool 💎
-          </span>
-          <div className="font-bold text-4xl text-white mt-3">
+          </span> */}
+          <div className="font-bold text-2xl text-white">
             ${prizePool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-sm text-white/50 mt-2 flex items-center justify-center gap-0.5">

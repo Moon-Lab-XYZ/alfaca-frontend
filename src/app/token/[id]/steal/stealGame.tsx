@@ -18,6 +18,8 @@ import {
 import { Copy, ExternalLink, X } from "lucide-react";
 import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
+import { PlayersLeaderboard } from "@/components/coin-website/players-leaderboard";
+import sdk from "@farcaster/frame-sdk";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -51,8 +53,30 @@ const CoinWebsite = () => {
       console.log(tokenData);
       return tokenData;
     } catch (error) {
+      console.error('Error fetching token data', error);
+    }
+  });
+
+
+  const {
+    data: stealCandidates,
+    error: stealCandidatesError,
+    mutate: mutateStealCandidates,
+    isLoading: stealCandidatesLoading,
+  } = useSWR(`stealCandidates-${id}`, async () => {
+    console.log('stealCandidates');
+    try {
+      const data =
+        await fetch(`/api/steal-candidates?tokenId=${id}`, {
+          method: 'GET',
+        });
+      const stealCandidates = await data.json();
+      return stealCandidates;
+    } catch (error) {
       console.error('Error fetching token dat', error);
     }
+  }, {
+    revalidateOnFocus: false,
   });
 
   const [coinDetails] = useState({
@@ -66,80 +90,6 @@ const CoinWebsite = () => {
       followers: 11000
     }
   });
-
-  const userList = [
-    {
-      username: "cryptochad",
-      gradient: "linear-gradient(90deg, hsla(221, 45%, 73%, 1) 0%, hsla(220, 78%, 29%, 1) 100%)",
-      tokenHolding: 25478,
-      farcasterStats: {
-        followers: 8574,
-        following: 412,
-        posts: 1327
-      }
-    },
-    {
-      username: "airdropking",
-      gradient: "linear-gradient(90deg, hsla(39, 100%, 77%, 1) 0%, hsla(22, 90%, 57%, 1) 100%)",
-      tokenHolding: 42310,
-      farcasterStats: {
-        followers: 12689,
-        following: 843,
-        posts: 3251
-      }
-    },
-    {
-      username: "tokenmaster",
-      gradient: "linear-gradient(90deg, hsla(59, 86%, 68%, 1) 0%, hsla(134, 36%, 53%, 1) 100%)",
-      tokenHolding: 18956,
-      farcasterStats: {
-        followers: 5432,
-        following: 231,
-        posts: 987
-      }
-    },
-    {
-      username: "moonshot",
-      gradient: "linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)",
-      tokenHolding: 35742,
-      farcasterStats: {
-        followers: 9876,
-        following: 567,
-        posts: 2134
-      }
-    },
-    {
-      username: "satoshibae",
-      gradient: "linear-gradient(90deg, hsla(24, 100%, 83%, 1) 0%, hsla(341, 91%, 68%, 1) 100%)",
-      tokenHolding: 29864,
-      farcasterStats: {
-        followers: 7421,
-        following: 321,
-        posts: 1564
-      }
-    },
-    {
-      username: "hodlqueen",
-      gradient: "linear-gradient(90deg, hsla(46, 73%, 75%, 1) 0%, hsla(176, 73%, 88%, 1) 100%)",
-      tokenHolding: 15932,
-      farcasterStats: {
-        followers: 6345,
-        following: 289,
-        posts: 1092
-      }
-    },
-  ];
-
-  const [selectedUsers, setSelectedUsers] = useState<typeof userList>([]);
-
-  useEffect(() => {
-    // Initial selection of users - this shouldn't mark shuffle as used
-    const shuffled = [...userList].sort(() => 0.5 - Math.random());
-    setSelectedUsers(shuffled.slice(0, 3));
-
-    // Set page loaded after a short delay for animations
-    setTimeout(() => setPageLoaded(true), 300);
-  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -168,32 +118,36 @@ const CoinWebsite = () => {
     return () => clearInterval(cooldownTimer);
   }, [cooldownActive]);
 
-  const shuffleUsers = () => {
-    // Don't check shuffleUsed in the initial load - it should be clickable the first time
-    const shuffled = [...userList].sort(() => 0.5 - Math.random());
-    setSelectedUsers(shuffled.slice(0, 3));
+  // const shuffleUsers = () => {
+  //   // Don't check shuffleUsed in the initial load - it should be clickable the first time
+  //   const shuffled = [...userList].sort(() => 0.5 - Math.random());
+  //   setSelectedUsers(shuffled.slice(0, 3));
 
-    // Only set shuffleUsed to true and show toast if not the initial load
-    if (!shuffleUsed) {
-      setShuffleUsed(true);
+  //   // Only set shuffleUsed to true and show toast if not the initial load
+  //   if (!shuffleUsed) {
+  //     setShuffleUsed(true);
 
-      toast({
-        description: "Users shuffled successfully! ✨",
-        duration: 2000,
-      });
-    } else {
-      toast({
-        description: "You can only shuffle once 🔒",
-        duration: 2000,
-      });
-    }
-  };
+  //     toast({
+  //       description: "Users shuffled successfully! ✨",
+  //       duration: 2000,
+  //     });
+  //   } else {
+  //     toast({
+  //       description: "You can only shuffle once 🔒",
+  //       duration: 2000,
+  //     });
+  //   }
+  // };
 
-  const handleSteal = () => {
+  const handleSteal = async () => {
     if (cooldownActive) return;
-
-    // Show requirement modal instead of immediately proceeding
-    // setShowRequirementModal(true);
+    const context = await sdk.context;
+    const url = `https://warpcast.com/~/compose?text=Hello%20world!&embeds[]=https://farcaster.xyz`;
+    if (context) {
+      await sdk.actions.openUrl(url);
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   const handleCloseModal = () => {
@@ -213,17 +167,6 @@ const CoinWebsite = () => {
     window.open(`https://dexscreener.com/ethereum/${(id as any)?.toLowerCase()}`, '_blank');
   };
 
-  const proceedWithSteal = () => {
-    setShowRequirementModal(false);
-    setCooldownActive(true);
-    setShowShareModal(true);
-
-    toast({
-      description: "Stealing in progress... 🚀",
-      duration: 1500,
-    });
-  };
-
   if (!tokenData || tokenDataLoading) {
     return (
       <div className="min-h-screen bg-[#000000] flex items-center justify-center">
@@ -236,30 +179,44 @@ const CoinWebsite = () => {
     <div className="min-h-screen bg-[#000000] pb-20">
       <CoinWebsiteHeader ticker={tokenData.symbol as any} />
 
-      <div className={`max-w-md mx-auto px-4 mt-3 transition-opacity duration-500 ${pageLoaded ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`max-w-md mx-auto px-4 mt-3`}>
         <PrizePoolCard
           ticker={tokenData.symbol as any}
+          contractAddress={tokenData.contract_address}
+          link={tokenData.link}
           initialPrizePool={126431.10}
           timeLeft={timeLeft}
         />
 
-        <UserProfilesSection
-          selectedUsers={selectedUsers}
-          shuffleUsers={shuffleUsers}
-          handleSteal={handleSteal}
-          cooldownActive={cooldownActive}
-          cooldownTimeLeft={cooldownTimeLeft}
-          shuffleUsed={shuffleUsed}
+        {
+          stealCandidates && !stealCandidatesLoading ?
+          <UserProfilesSection
+            selectedUsers={stealCandidates}
+            handleSteal={handleSteal}
+            cooldownActive={cooldownActive}
+            cooldownTimeLeft={cooldownTimeLeft}
+            shuffleUsed={shuffleUsed}
+            ticker={tokenData.symbol}
+          />
+          : null
+        }
+
+        <PlayersLeaderboard
           ticker={tokenData.symbol}
+          currentUser={{
+            username: "warpcastadmin",
+            gradient: "linear-gradient(90deg, hsla(24, 100%, 83%, 1) 0%, hsla(341, 91%, 68%, 1) 100%)",
+            tokenHolding: 125,
+          }}
         />
       </div>
 
-      <ShareModal
+      {/* <ShareModal
         open={showShareModal}
         onOpenChange={setShowShareModal}
         ticker={coinDetails.ticker as any}
         selectedUsername={selectedUsers[1]?.username || 'user'}
-      />
+      /> */}
 
       {/* Token Requirement Dialog */}
       <AlertDialog open={showRequirementModal}>
