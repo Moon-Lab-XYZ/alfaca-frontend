@@ -6,11 +6,11 @@ import { CreatorAvatar } from "@/components/creator-avatar";
 import { Separator } from "@/components/ui/separator";
 
 interface PlayersLeaderboardProps {
-  ticker: string;
+  tokenId: any;
   currentUser?: any;
 }
 
-export const PlayersLeaderboard = ({ ticker, currentUser }: PlayersLeaderboardProps) => {
+export const PlayersLeaderboard = ({ tokenId, currentUser }: PlayersLeaderboardProps) => {
   // Sample player data - in a real app this would come from an API
   const [players] = useState<any[]>([
     {

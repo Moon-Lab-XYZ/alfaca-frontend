@@ -9,7 +9,7 @@ interface PrizePoolCardProps {
   contractAddress: string;
   link: string;
   initialPrizePool: number;
-  timeLeft: number;
+  timeLeft: any;
 }
 
 export const PrizePoolCard = ({ ticker, contractAddress, link, initialPrizePool, timeLeft }: PrizePoolCardProps) => {
@@ -27,17 +27,14 @@ export const PrizePoolCard = ({ ticker, contractAddress, link, initialPrizePool,
     return () => clearInterval(prizeInterval);
   }, []);
 
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    const secs = Math.floor((mins % 1) * 60);
+  const formatTime = (timeObj: any) => {
     return (
       <>
-        <span className="text-white">{hours}</span>
+        <span className="text-white">{timeObj.hours}</span>
         <span className="text-white/50">h </span>
-        <span className="text-white">{Math.floor(mins)}</span>
+        <span className="text-white">{timeObj.minutes}</span>
         <span className="text-white/50">min </span>
-        <span className="text-white">{secs}</span>
+        <span className="text-white">{timeObj.seconds}</span>
         <span className="text-white/50">sec remaining</span>
       </>
     );

@@ -20,6 +20,7 @@ import { createClient } from "@supabase/supabase-js";
 import { PlayersLeaderboard } from "@/components/coin-website/players-leaderboard";
 import sdk from "@farcaster/frame-sdk";
 import useUser from "@/lib/user";
+import moment from 'moment-timezone';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -28,12 +29,11 @@ const supabase = createClient(
 
 const CoinWebsite = () => {
   const { id } = useParams();
-  const [timeLeft, setTimeLeft] = useState(1440); // 24 hours in minutes
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const { toast } = useToast();
   const [cooldownActive, setCooldownActive] = useState(false);
   const [cooldownTimeLeft, setCooldownTimeLeft] = useState(30 * 60); // 30 minutes in seconds
   const [shuffleUsed, setShuffleUsed] = useState(false);
-  const [pageLoaded, setPageLoaded] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
 
   const { data: user } = useUser();
@@ -83,44 +83,53 @@ const CoinWebsite = () => {
     revalidateOnFocus: false,
   });
 
-  const [coinDetails] = useState({
-    name: "Zerebro",
-    ticker: id || "ZEREBRO",
-    image: "https://via.placeholder.com/150",
-    creator: {
-      username: "coinmaster",
-      image: "https://via.placeholder.com/150",
-      volume24h: 235000,
-      followers: 11000
+  function getNextRoundEndTime() {
+    // Get current time in Pacific Time
+    const nowPT = moment().tz('America/Los_Angeles');
+
+    // Create 4PM PT today
+    const target4PMPT = moment.tz('America/Los_Angeles')
+      .hour(16)
+      .minute(0)
+      .second(0)
+      .millisecond(0);
+
+    // If it's already past 4PM PT, set to 4PM PT tomorrow
+    if (nowPT.isAfter(target4PMPT)) {
+      target4PMPT.add(1, 'day');
     }
-  });
+
+    // Return as a JavaScript Date object in the user's local time zone
+    return target4PMPT.toDate();
+  }
 
   useEffect(() => {
+    const calculateTimeUntil4PMPT = () => {
+      const now = moment();
+      const nextRoundEndTime = moment(getNextRoundEndTime());
+
+      // Calculate the difference in milliseconds
+      const diff = nextRoundEndTime.diff(now);
+
+      // Convert to hours, minutes, seconds
+      const duration = moment.duration(diff);
+      const hours = Math.floor(duration.asHours());
+      const minutes = Math.floor(duration.minutes());
+      const seconds = Math.floor(duration.seconds());
+
+      return { hours, minutes, seconds };
+    };
+
+    // Update time initially
+    setTimeLeft(calculateTimeUntil4PMPT());
+
+    // Set up interval to update every second
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) return 1440; // Reset to 24 hours when reaching 0
-        return prev - 1;
-      });
-    }, 1000); // Update every second
+      setTimeLeft(calculateTimeUntil4PMPT());
+    }, 1000);
 
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (!cooldownActive) return;
-
-    const cooldownTimer = setInterval(() => {
-      setCooldownTimeLeft((prev) => {
-        if (prev <= 1) {
-          setCooldownActive(false);
-          return 30 * 60; // Reset to 30 minutes
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(cooldownTimer);
-  }, [cooldownActive]);
 
   // const shuffleUsers = () => {
   //   // Don't check shuffleUsed in the initial load - it should be clickable the first time
@@ -211,7 +220,7 @@ const CoinWebsite = () => {
         {
           user ?
           <PlayersLeaderboard
-            ticker={tokenData.symbol}
+            tokenId={id as any}
             currentUser={user.user}
           />
           : null
