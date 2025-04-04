@@ -133,6 +133,7 @@ export async function GET(request: NextRequest) {
           )
         `)
         .eq('round_id', currentRound.id)
+        .not('user_id', 'in', `(${candidates.map(c => c.id).join(',')})`)
         .order('points', { ascending: false })
         .limit(10);
 
@@ -167,7 +168,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         if (userData && userData.farcaster_id) {
-          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id, currentRound.id);
+          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id, currentRound.id, candidates);
           if (followeeCandidate) {
             candidates.push(followeeCandidate);
 
@@ -201,6 +202,7 @@ export async function GET(request: NextRequest) {
         .eq('target_id', userId.toString())
         .eq('round_id', currentRound.id)
         .eq('successful', true)
+        .not('attacker_id', 'in', `(${candidates.map(c => c.id).join(',')})`)
         .gte('created_at', oneDayAgo.toISOString())
         .order('created_at', { ascending: false });
 
@@ -234,7 +236,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         if (userData && userData.farcaster_id) {
-          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id, currentRound.id);
+          const followeeCandidate = await getRandomFolloweeCandidate(userData.farcaster_id, currentRound.id, candidates);
           if (followeeCandidate) {
             candidates.push(followeeCandidate);
 
@@ -425,13 +427,14 @@ async function ensurePlayerPointsEntry(roundId: number, userId: string | number)
 }
 
 // Helper function to get a random followee as a candidate
-async function getRandomFolloweeCandidate(farcasterId: string, roundId: number): Promise<StealCandidate | null> {
+async function getRandomFolloweeCandidate(farcasterId: string, roundId: number, candidates: any): Promise<StealCandidate | null> {
   try {
     // Get the user's Farcaster ID
     const { data: userData } = await supabase
       .from('users')
       .select('farcaster_id')
       .eq('id', farcasterId)
+      .not('id', 'in', `(${candidates.map((c: any) => c.id).join(',')})`)
       .single();
 
     if (!userData || !userData.farcaster_id) {

@@ -55,21 +55,15 @@ export const UserProfilesSection = ({
           <div className="grid grid-cols-3 gap-4">
             {selectedUsers ? selectedUsers.map((user, index) => (
               <div key={index} className="flex flex-col items-center">
-                <div
-                  className="transition-all duration-300"
-                >
-                  <div className="flex flex-col items-center mt-2 space-y-1">
-                    <CreatorAvatar
-                      username={user.username}
-                      image={user.avatar_url ? user.avatar_url : "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
-                      size="lg"
-                      type="creator"
-                    />
-                    <p className="text-white text-lg font-medium text-ellipsis line-clamp-1">@{user.username}</p>
-                    <p className="text-[#E5DEFF] text-base font-semibold">
-                      {user.tokenHolding?.toLocaleString()} 🦙 {user.points}
-                    </p>
-                  </div>
+                <CreatorAvatar
+                  username={user.username}
+                  image={user.avatar_url ? user.avatar_url : "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
+                  size="lg"
+                  type="creator"
+                />
+                <div className="text-white text-lg font-medium text-center truncate w-full">@{user.username}</div>
+                <div className="text-[#E5DEFF] text-base font-semibold">
+                  {user.tokenHolding?.toLocaleString()} 🦙 {user.points}
                 </div>
               </div>
             )) : null}
