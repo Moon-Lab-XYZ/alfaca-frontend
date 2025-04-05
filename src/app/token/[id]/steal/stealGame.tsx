@@ -212,7 +212,7 @@ const CoinWebsite = () => {
             ticker={tokenData.symbol}
           />
           :
-          <div className="flex flex-col items-center justify-center py-8">
+          <div className="flex flex-col items-center justify-center py-24">
             <div className="w-10 h-10 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin mb-2"></div>
           </div>
         }
@@ -220,6 +220,7 @@ const CoinWebsite = () => {
         {
           user ?
           <PlayersLeaderboard
+            ticker={tokenData.symbol as any}
             tokenId={id as any}
             currentUser={user.user}
           />
