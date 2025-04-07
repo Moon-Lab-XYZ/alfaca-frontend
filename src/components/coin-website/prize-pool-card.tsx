@@ -48,7 +48,6 @@ export const PrizePoolCard = ({
           .limit(1)
           .single();
 
-        // If we have prize_pool_amount, use it
         if (roundData) {
           return roundData.prize_pool_amount + roundData.base_prize_pool_amount;
         } else {

@@ -1,56 +1,41 @@
 import { CreatorAvatar } from "@/components/creator-avatar";
-import { Shuffle, Sparkles, Zap, Users } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import sdk from "@farcaster/frame-sdk";
 
 interface UserProfilesSectionProps {
   selectedUsers: any[];
-  handleSteal: () => void;
-  cooldownActive: boolean;
-  cooldownTimeLeft: number;
-  shuffleUsed: boolean;
   ticker: string;
+  tokenId: string;
 }
 
 export const UserProfilesSection = ({
   selectedUsers,
-  handleSteal,
-  cooldownActive,
-  cooldownTimeLeft,
-  shuffleUsed,
-  ticker
+  ticker,
+  tokenId,
 }: UserProfilesSectionProps) => {
-  const formatCooldownTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+
+  const handleSteal = async () => {
+    if (!selectedUsers || selectedUsers.length === 0) {
+      console.error("No selected users to steal from.");
+      return;
+    }
+
+    const selectedUsernames = selectedUsers.map((user) => user.username).join(", ");
+    const urlEncodedUsernames = encodeURIComponent(selectedUsernames);
+
+    const context = await sdk.context;
+    const url = `https://warpcast.com/~/compose?text=I%27m%20stealing%20%24${ticker}%20from%20${urlEncodedUsernames}%20on%20%40alfaca%21&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${tokenId}/steal`;
+    if (context) {
+      await sdk.actions.openUrl(url);
+    } else {
+      window.open(url, "_blank");
+    }
   };
-
-  const [isShuffling, setIsShuffling] = useState(false);
-  const [animationKey, setAnimationKey] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [interactionCount, setInteractionCount] = useState(0);
-
-  const handleUserClick = (index: number) => {
-    setSelectedIndex(index === selectedIndex ? null : index);
-    setInteractionCount(prev => prev + 1);
-  };
-
-  useEffect(() => {
-    setSelectedIndex(null);
-  }, [selectedUsers]);
 
   return (
     <div className="mb-10">
-      <Card className="bg-[#111111] border-[#222222] shadow-xl rounded-xl mb-6 overflow-hidden relative" key={animationKey}>
+      <Card className="bg-[#111111] border-[#222222] shadow-xl rounded-xl mb-6 overflow-hidden relative">
         <CardContent className="p-6">
           <div className="grid grid-cols-3 gap-4">
             {selectedUsers ? selectedUsers.map((user, index) => (
@@ -73,16 +58,13 @@ export const UserProfilesSection = ({
         <CardFooter className="p-6 pt-0">
           <button
             onClick={handleSteal}
-            disabled={cooldownActive}
             className="relative overflow-hidden w-full bg-[#E5DEFF] hover:bg-[#E5DEFF] disabled:opacity-80 disabled:cursor-not-allowed text-[#111111] rounded-xl px-6 py-3 font-medium transition-all duration-200 font-['Outfit']"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              {cooldownActive ? formatCooldownTime(cooldownTimeLeft) : (
-                <>
-                  Steal
-                  <Sparkles className="h-4 w-4 text-amber-600" />
-                </>
-              )}
+              <>
+                Steal
+                <Sparkles className="h-4 w-4 text-amber-600" />
+              </>
             </span>
           </button>
         </CardFooter>

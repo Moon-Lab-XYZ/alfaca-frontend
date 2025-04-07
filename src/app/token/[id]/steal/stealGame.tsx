@@ -18,7 +18,6 @@ import { Copy, ExternalLink, X } from "lucide-react";
 import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
 import { PlayersLeaderboard } from "@/components/coin-website/players-leaderboard";
-import sdk from "@farcaster/frame-sdk";
 import useUser from "@/lib/user";
 import moment from 'moment-timezone';
 
@@ -31,9 +30,6 @@ const CoinWebsite = () => {
   const { id } = useParams();
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const { toast } = useToast();
-  const [cooldownActive, setCooldownActive] = useState(false);
-  const [cooldownTimeLeft, setCooldownTimeLeft] = useState(30 * 60); // 30 minutes in seconds
-  const [shuffleUsed, setShuffleUsed] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
 
   const { data: user } = useUser();
@@ -131,17 +127,6 @@ const CoinWebsite = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSteal = async () => {
-    if (cooldownActive) return;
-    const context = await sdk.context;
-    const url = `https://warpcast.com/~/compose?text=Hello%20world!&embeds[]=https://farcaster.xyz`;
-    if (context) {
-      await sdk.actions.openUrl(url);
-    } else {
-      window.open(url, "_blank");
-    }
-  };
-
   const handleCloseModal = () => {
     setShowRequirementModal(false);
   };
@@ -184,11 +169,8 @@ const CoinWebsite = () => {
           stealCandidates && !stealCandidatesLoading && !stealCandidatesValidating ?
           <UserProfilesSection
             selectedUsers={stealCandidates}
-            handleSteal={handleSteal}
-            cooldownActive={cooldownActive}
-            cooldownTimeLeft={cooldownTimeLeft}
-            shuffleUsed={shuffleUsed}
             ticker={tokenData.symbol}
+            tokenId={id as string}
           />
           :
           <div className="flex flex-col items-center justify-center py-24">
