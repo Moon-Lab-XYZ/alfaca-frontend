@@ -1,31 +1,69 @@
-
 import { useEffect, useState } from "react";
 import { Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import sdk from "@farcaster/frame-sdk";
+import { createClient } from "@supabase/supabase-js";
+import useSWR from "swr";
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+);
+
+// Base prize pool amount - we'll add the 0.25% of volume to this
+const DAILY_PRIZE_POOL_BASE_AMOUNT = 10;
 
 interface PrizePoolCardProps {
   ticker: string;
   contractAddress: string;
   link: string;
-  initialPrizePool: number;
+  initialPrizePool?: number;
   timeLeft: any;
+  tokenId: number;
 }
 
-export const PrizePoolCard = ({ ticker, contractAddress, link, initialPrizePool, timeLeft }: PrizePoolCardProps) => {
-  const [prizePool, setPrizePool] = useState(initialPrizePool);
+export const PrizePoolCard = ({
+  ticker,
+  contractAddress,
+  link,
+  initialPrizePool,
+  timeLeft,
+  tokenId
+}: PrizePoolCardProps) => {
   const { toast } = useToast();
 
-  useEffect(() => {
-    const prizeInterval = setInterval(() => {
-      setPrizePool(current => {
-        const increase = Math.random() * 0.5 + 0.1;
-        return Number((current + increase).toFixed(2));
-      });
-    }, 1000);
+  // Fetch the prize pool data
+  const { data: prizePoolData, isLoading } = useSWR(
+    [`prize-pool-${tokenId}`, tokenId],
+    async ([_, tokenId]) => {
+      try {
+        // Get the current round for this token
+        const { data: roundData, error: roundError } = await supabase
+          .from('sg_rounds')
+          .select('id, prize_pool_amount, base_prize_pool_amount')
+          .eq('token', tokenId)
+          .eq('status', 'ACTIVE')
+          .order('round_end_time', { ascending: false })
+          .limit(1)
+          .single();
 
-    return () => clearInterval(prizeInterval);
-  }, []);
+        // If we have prize_pool_amount, use it
+        if (roundData) {
+          return roundData.prize_pool_amount + roundData.base_prize_pool_amount;
+        } else {
+          return 0;
+        }
+      } catch (error) {
+        console.error('Error in fetching prize pool data:', error);
+        return 0;
+      }
+    },
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      fallbackData: initialPrizePool || DAILY_PRIZE_POOL_BASE_AMOUNT
+    }
+  );
 
   const formatTime = (timeObj: any) => {
     return (
@@ -62,11 +100,14 @@ export const PrizePoolCard = ({ ticker, contractAddress, link, initialPrizePool,
     <div className="bg-[#1A1A1A] shadow-[0_4px_20px_rgba(0,0,0,0.4)] rounded-2xl mb-8">
       <div className="py-4 px-4 text-center">
         <div>
-          {/* <span className="text-white text-lg flex items-center justify-center gap-2">
-            💎 ${ticker} Prize Pool 💎
-          </span> */}
           <div className="font-bold text-2xl text-white">
-            ${prizePool.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {isLoading ? (
+              <div className="flex justify-center">
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              </div>
+            ) : (
+              `$${prizePoolData.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            )}
           </div>
           <div className="text-sm text-white/50 mt-2 flex items-center justify-center gap-0.5">
             {formatTime(timeLeft)}

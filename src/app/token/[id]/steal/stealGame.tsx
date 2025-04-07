@@ -131,27 +131,6 @@ const CoinWebsite = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // const shuffleUsers = () => {
-  //   // Don't check shuffleUsed in the initial load - it should be clickable the first time
-  //   const shuffled = [...userList].sort(() => 0.5 - Math.random());
-  //   setSelectedUsers(shuffled.slice(0, 3));
-
-  //   // Only set shuffleUsed to true and show toast if not the initial load
-  //   if (!shuffleUsed) {
-  //     setShuffleUsed(true);
-
-  //     toast({
-  //       description: "Users shuffled successfully! ✨",
-  //       duration: 2000,
-  //     });
-  //   } else {
-  //     toast({
-  //       description: "You can only shuffle once 🔒",
-  //       duration: 2000,
-  //     });
-  //   }
-  // };
-
   const handleSteal = async () => {
     if (cooldownActive) return;
     const context = await sdk.context;
@@ -197,7 +176,7 @@ const CoinWebsite = () => {
           ticker={tokenData.symbol as any}
           contractAddress={tokenData.contract_address}
           link={tokenData.link}
-          initialPrizePool={126431.10}
+          tokenId={parseInt(id as string)}
           timeLeft={timeLeft}
         />
 
