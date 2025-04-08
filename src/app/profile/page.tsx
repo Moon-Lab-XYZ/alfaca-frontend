@@ -78,6 +78,8 @@ const Profile = () => {
     } catch (error) {
       console.error('Error fetching user tokens', error);
     }
+  }, {
+    refreshInterval: 5000,
   });
 
   const {
