@@ -20,6 +20,7 @@ import { createClient } from "@supabase/supabase-js";
 import { PlayersLeaderboard } from "@/components/coin-website/players-leaderboard";
 import useUser from "@/lib/user";
 import moment from 'moment-timezone';
+import { mutate } from "swr";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -62,7 +63,6 @@ const CoinWebsite = () => {
     isLoading: stealCandidatesLoading,
     isValidating: stealCandidatesValidating,
   } = useSWR(`stealCandidates-${id}`, async () => {
-    console.log('stealCandidates');
     try {
       const data =
         await fetch(`/api/steal-candidates?tokenId=${id}`, {
@@ -70,6 +70,8 @@ const CoinWebsite = () => {
         });
       const stealCandidates = await data.json();
       console.log(stealCandidates)
+      mutate(`prize-pool-${id}`);
+      mutate(`leaderboard-${id}`);
       return stealCandidates;
     } catch (error) {
       console.error('Error fetching token data', error);
