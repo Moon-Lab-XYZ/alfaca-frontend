@@ -5,7 +5,6 @@ import { CreatorAvatar } from "./creator-avatar";
 interface OtherCoinsButtonProps {
   ticker: string;
   image: string;
-  gradient: string;
   coinsCount: number;
   onClick: (e: React.MouseEvent) => void;
 }
@@ -13,7 +12,6 @@ interface OtherCoinsButtonProps {
 export const OtherCoinsButton = ({
   ticker,
   image,
-  gradient,
   coinsCount,
   onClick
 }: OtherCoinsButtonProps) => {
@@ -26,7 +24,6 @@ export const OtherCoinsButton = ({
         <CreatorAvatar
           username={ticker}
           image={image}
-          gradient={gradient}
           size="sm"
         />
         <div className="text-sm text-white/70">

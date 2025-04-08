@@ -7,7 +7,6 @@ interface CreatorInfoProps {
   image: string;
   volume24h: number;
   volumeCurrentRound: number;
-  gradient: string;
   rank?: number;
   onClick: (e: React.MouseEvent) => void;
 }
@@ -17,7 +16,6 @@ export const CreatorInfo = ({
   image,
   volume24h,
   volumeCurrentRound,
-  gradient,
   rank,
   onClick
 }: CreatorInfoProps) => {
@@ -33,7 +31,6 @@ export const CreatorInfo = ({
         <CreatorAvatar
           username={username}
           image={image}
-          gradient={gradient}
           type="creator"
         />
       </div>

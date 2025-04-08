@@ -91,7 +91,6 @@ export const CoinCard = ({
           image={avatar_url}
           volume24h={total_txn_vol_last_24h}
           volumeCurrentRound={total_txn_vol_current_round}
-          gradient={avatarGradient}
           onClick={handleCreatorClick}
         />
 
@@ -111,7 +110,6 @@ export const CoinCard = ({
         <OtherCoinsButton
           ticker={tokens[0].symbol}
           image={tokens[0].image}
-          gradient={coinGradient}
           coinsCount={token_count - 1}
           onClick={handleCreatorCoinsClick}
         />
