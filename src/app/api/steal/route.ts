@@ -9,63 +9,133 @@ const supabase = createClient(
 );
 
 export async function POST(request: NextRequest) {
-  // Verify user is authenticated
-  const body = await request.text();
-  const sig = request.headers.get("X-Neynar-Signature");
-  if (!sig) {
-    return NextResponse.json({ error: "Neynar signature missing from request headers" }, { status: 400 });
-  }
-  const webhookSecret = process.env.NEYNAR_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    return NextResponse.json({ error: "Make sure you set NEYNAR_WEBHOOK_SECRET in your .env file" }, { status: 400 });
-  }
-  const hmac = createHmac("sha512", webhookSecret);
-  hmac.update(body);
-
-  const generatedSignature = hmac.digest("hex");
-
-  const isValid = generatedSignature === sig;
-  if (!isValid) {
-    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
-  }
-
-  console.log('steal');
-
   try {
-    const { attackerId, targetIds, roundId, castId } = await request.json();
+    // Read the request body once and convert to string for verification
+    const bodyText = await request.text();
+    const bodyData = JSON.parse(bodyText);
 
-    if (!targetIds || !Array.isArray(targetIds) || targetIds.length === 0) {
-      return NextResponse.json({ error: "Invalid targets provided" }, { status: 400 });
+    // Verify signature
+    const sig = request.headers.get("X-Neynar-Signature");
+    if (!sig) {
+      return NextResponse.json({ error: "Neynar signature missing from request headers" }, { status: 400 });
     }
 
-    if (!roundId) {
-      return NextResponse.json({ error: "Round ID is required" }, { status: 400 });
+    const webhookSecret = process.env.NEYNAR_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      return NextResponse.json({ error: "Make sure you set NEYNAR_WEBHOOK_SECRET in your .env file" }, { status: 400 });
     }
 
-    // Get the current round to ensure it's active
+    const hmac = createHmac("sha512", webhookSecret);
+    hmac.update(bodyText);
+    const generatedSignature = hmac.digest("hex");
+
+    const isValid = generatedSignature === sig;
+    if (!isValid) {
+      return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
+    }
+
+    console.log('steal webhook received');
+
+    // 1. Check if the text contains the invisible braille unicode
+    const castText = bodyData.data.text;
+    const hiddenCharRegex = /\u2800/;
+    if (!hiddenCharRegex.test(castText)) {
+      console.log('Missing hidden character marker');
+      return NextResponse.json({ error: "Not a valid steal command" }, { status: 400 });
+    }
+
+    // 2. Parse attackerId from author.fid
+    const attackerId = bodyData.data.author.fid;
+    console.log(`Attacker FID: ${attackerId}`);
+
+    // Look up the user ID from farcaster_id
+    const { data: attackerUser, error: attackerError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('farcaster_id', attackerId)
+      .single();
+
+    if (attackerError || !attackerUser) {
+      console.log(`User not found for FID: ${attackerId}`);
+      return NextResponse.json({ error: "Attacker not found" }, { status: 404 });
+    }
+
+    // 3. Extract usernames from text and convert to user IDs
+    const usernames = parseUsernames(castText);
+    console.log(`Parsed usernames: ${usernames.join(', ')}`);
+
+    if (usernames.length === 0) {
+      return NextResponse.json({ error: "No target usernames found" }, { status: 400 });
+    }
+
+    // Convert usernames to user IDs
+    const { data: targetUsers, error: targetUsersError } = await supabase
+      .from('users')
+      .select('id, farcaster_username')
+      .in('farcaster_username', usernames);
+
+    if (targetUsersError || !targetUsers || targetUsers.length === 0) {
+      console.log('No matching target users found');
+      return NextResponse.json({ error: "No matching target users found" }, { status: 404 });
+    }
+
+    const targetIds = targetUsers.map(user => user.id);
+    console.log(`Target IDs: ${targetIds.join(', ')}`);
+
+    // 4. Extract token ID from embeds and find the latest active round
+    let tokenId = null;
+
+    // Check embeds for token ID
+    if (bodyData.data.embeds && bodyData.data.embeds.length > 0) {
+      for (const embed of bodyData.data.embeds) {
+        if (embed.url) {
+          const match = embed.url.match(/\/token\/(\d+)\/steal/);
+          if (match && match[1]) {
+            tokenId = parseInt(match[1]);
+            break;
+          }
+        }
+      }
+    }
+
+    if (!tokenId) {
+      console.log('No token ID found in embeds');
+      return NextResponse.json({ error: "Token ID not found" }, { status: 400 });
+    }
+
+    console.log(`Token ID: ${tokenId}`);
+
+    // Find the latest active round for this token
     const { data: roundData, error: roundError } = await supabase
       .from('sg_rounds')
       .select('*')
-      .eq('id', roundId)
+      .eq('token', tokenId)
+      .eq('status', 'ACTIVE')
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
     if (roundError || !roundData) {
-      return NextResponse.json({ error: "Round not found" }, { status: 404 });
+      console.log(`No active round found for token ${tokenId}`);
+      return NextResponse.json({ error: "No active round found for this token" }, { status: 404 });
     }
 
-    if (roundData.status !== 'active') {
-      return NextResponse.json({ error: "Round is not active" }, { status: 400 });
-    }
+    const roundId = roundData.id;
+    console.log(`Round ID: ${roundId}`);
+
+    // 5. Parse castId from data.hash
+    const castId = bodyData.data.hash;
+    console.log(`Cast ID: ${castId}`);
 
     // Get attacker's points
-    const { data: attackerPoints, error: attackerError } = await supabase
+    const { data: attackerPoints, error: attackerPointsError } = await supabase
       .from('sg_player_points')
       .select('*')
-      .eq('user_id', attackerId)
+      .eq('user_id', attackerUser.id)
       .eq('round_id', roundId)
       .single();
 
-    if (attackerError || !attackerPoints) {
+    if (attackerPointsError || !attackerPoints) {
       return NextResponse.json({ error: "Attacker not found in this round" }, { status: 404 });
     }
 
@@ -124,7 +194,7 @@ export async function POST(request: NextRequest) {
         await supabase
           .from('sg_player_points')
           .update({ points: attackerPoints.points + stealAmount })
-          .eq('user_id', attackerId)
+          .eq('user_id', attackerUser.id)
           .eq('round_id', roundId);
 
         await supabase
@@ -137,7 +207,14 @@ export async function POST(request: NextRequest) {
         await supabase
           .from('sg_player_points')
           .update({ points: attackerPoints.points - betAmount })
-          .eq('user_id', attackerId)
+          .eq('user_id', attackerUser.id)
+          .eq('round_id', roundId);
+
+        // target wins bet amount
+        await supabase
+          .from('sg_player_points')
+          .update({ points: targetPoints.points + betAmount })
+          .eq('user_id', targetId)
           .eq('round_id', roundId);
       }
 
@@ -146,7 +223,7 @@ export async function POST(request: NextRequest) {
         .from('sg_player_actions')
         .insert({
           round_id: roundId,
-          attacker_id: attackerId,
+          attacker_id: attackerUser.id,
           target_id: targetId,
           amount: isSuccessful ? stealAmount : betAmount,
           successful: isSuccessful,
@@ -177,4 +254,26 @@ export async function POST(request: NextRequest) {
     console.error("Error processing steal action:", error);
     return NextResponse.json({ error: "Failed to process steal" }, { status: 500 });
   }
+}
+
+/**
+ * Parses usernames from a stealing announcement text
+ * @param {string} text - The text containing usernames
+ * @returns {string[]} Array of extracted usernames
+ */
+function parseUsernames(text: string) {
+  // Match the text between "from" and "on @alfaca!"
+  const regex = /from\s+(.+?)\s+on\s+@alfaca!/i;
+  const match = text.match(regex);
+
+  if (!match || !match[1]) {
+    return [];
+  }
+
+  // Get the captured usernames part and split by commas and optional spaces
+  const usernamesStr = match[1];
+  // Split by comma and optional space, then trim each username
+  const usernames = usernamesStr.split(/\s*,\s*/).map((username: string) => username.trim());
+
+  return usernames;
 }
