@@ -271,24 +271,28 @@ const Launch = () => {
                 </div>
               </div>
 
-              <Card className="bg-black/30 border border-white/10 p-4 rounded-xl">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Wand2 className="w-5 h-5 text-[#E5DEFF]" />
-                    <label className="text-white text-sm font-medium font-['Outfit']">Stolen game</label>
+              {
+                user && user.user.is_sg_whitelisted ?
+                <Card className="bg-black/30 border border-white/10 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-5 h-5 text-[#E5DEFF]" />
+                      <label className="text-white text-sm font-medium font-['Outfit']">Stolen game</label>
+                    </div>
+                    <Switch
+                      checked={formData.infeedGame}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, infeedGame: checked }))
+                      }
+                      className="data-[state=checked]:bg-[#E5DEFF] data-[state=unchecked]:bg-white/10"
+                    />
                   </div>
-                  <Switch
-                    checked={formData.infeedGame}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, infeedGame: checked }))
-                    }
-                    className="data-[state=checked]:bg-[#E5DEFF] data-[state=unchecked]:bg-white/10"
-                  />
-                </div>
-                <p className="text-white/60 text-xs mt-2 font-['Outfit']">
-                  Enable stolen in-feed game to let users interact with your token on farcaster
-                </p>
-              </Card>
+                  <p className="text-white/60 text-xs mt-2 font-['Outfit']">
+                    Enable stolen in-feed game to let users interact with your token on farcaster
+                  </p>
+                </Card>
+                : null
+              }
 
               <button
                 type="submit"
