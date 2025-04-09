@@ -60,6 +60,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Attacker not found" }, { status: 404 });
     }
 
+    // Update the user's status to ACTIVE when they initiate a steal
+    await supabase
+      .from('users')
+      .update({ status: 'ACTIVE' })
+      .eq('id', attackerUser.id);
+
+    console.log(`Updated user ${attackerUser.id} status to ACTIVE`);
+
     // 3. Extract usernames from text and convert to user IDs
     const usernames = parseUsernames(castText);
     console.log(`Parsed usernames: ${usernames.join(', ')}`);
