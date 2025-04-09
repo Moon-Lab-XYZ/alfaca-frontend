@@ -45,18 +45,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse attackerId from author.fid
-    const attackerId = bodyData.data.author.fid;
-    console.log(`Attacker FID: ${attackerId}`);
+    const attackerFid = bodyData.data.author.fid;
+    console.log(`Attacker FID: ${attackerFid}`);
 
     // Look up the user ID from farcaster_id
     const { data: attackerUser, error: attackerError } = await supabase
       .from('users')
       .select('id')
-      .eq('farcaster_id', attackerId)
+      .eq('farcaster_id', attackerFid)
       .single();
 
     if (attackerError || !attackerUser) {
-      console.log(`User not found for FID: ${attackerId}`);
+      console.log(`User not found for FID: ${attackerFid}`);
       return NextResponse.json({ error: "Attacker not found" }, { status: 404 });
     }
 
@@ -105,6 +105,20 @@ export async function POST(request: NextRequest) {
 
     console.log(`Token ID: ${tokenId}`);
 
+    // Get token details
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('tokens')
+      .select('symbol')
+      .eq('id', tokenId)
+      .single();
+
+    if (tokenError || !tokenData) {
+      console.log(`Token not found: ${tokenId}`);
+      return NextResponse.json({ error: "Token not found" }, { status: 404 });
+    }
+
+    const tokenSymbol = tokenData.symbol;
+
     // Find the latest active round for this token
     const { data: roundData, error: roundError } = await supabase
       .from('sg_rounds')
@@ -124,8 +138,8 @@ export async function POST(request: NextRequest) {
     console.log(`Round ID: ${roundId}`);
 
     // 5. Parse castId from data.hash
-    const castId = bodyData.data.hash;
-    console.log(`Cast ID: ${castId}`);
+    const castHash = bodyData.data.hash;
+    console.log(`Cast Hash: ${castHash}`);
 
     // Get attacker's points
     const { data: attackerPoints, error: attackerPointsError } = await supabase
@@ -148,74 +162,104 @@ export async function POST(request: NextRequest) {
 
     // Process each target
     const results = [];
+    const successfulSteals = [];
+    const failedSteals = [];
+
+    // Keep track of points for final tally
+    let currentAttackerPoints = attackerPoints.points;
 
     for (const targetId of targetIds) {
-      // Get target's points
-      const { data: targetPoints, error: targetError } = await supabase
+      // Get target's points and username
+      const { data: targetPointsData, error: targetPointsError } = await supabase
         .from('sg_player_points')
-        .select('*')
+        .select('points, user_id')
         .eq('user_id', targetId)
         .eq('round_id', roundId)
         .single();
 
-      if (targetError || !targetPoints) {
+      const { data: targetUserData, error: targetUserError } = await supabase
+        .from('users')
+        .select('farcaster_username')
+        .eq('id', targetId)
+        .single();
+
+      console.log(targetUserData);
+
+      if (targetPointsError || !targetPointsData || targetUserError || !targetUserData) {
         results.push({
           targetId,
+          username: targetUsers.find(u => u.id === targetId)?.farcaster_username || 'unknown',
           success: false,
           error: "Target not found in this round"
         });
+        failedSteals.push(`@${targetUsers.find(u => u.id === targetId)?.farcaster_username || 'unknown'} (not in game)`);
         continue;
       }
 
-      if (targetPoints.points <= 0) {
+      const targetPoints = targetPointsData.points;
+      const targetUsername = targetUserData.farcaster_username;
+
+      if (targetPoints <= 0) {
         results.push({
           targetId,
+          username: targetUsername,
           success: false,
           error: "Target has no points to steal"
         });
+        console.log(`Target ${targetUsername} has no points to steal`);
+        failedSteals.push(`@${targetUsername} (no points)`);
         continue;
       }
 
       // Calculate win probability using the formula
       // P(win) = min(0.05 + 0.75 * (attacker_pct / (attacker_pct + defender_pct))^1.0, 0.80)
-      const totalPoints = attackerPoints.points + targetPoints.points;
-      const attackerPct = attackerPoints.points / totalPoints;
+      const totalPoints = currentAttackerPoints + targetPoints;
+      const attackerPct = currentAttackerPoints / totalPoints;
       const winProbability = Math.min(0.05 + 0.75 * Math.pow(attackerPct, 1.0), 0.80);
 
       // Determine success
       const isSuccessful = Math.random() < winProbability;
 
       // Calculate actual amount to steal (max 10% of attacker's points or target's points, whichever is lower)
-      const stealAmount = Math.min(betAmount, targetPoints.points);
+      const stealAmount = Math.min(betAmount, targetPoints);
 
-      // Update points based on success
       if (isSuccessful) {
         // Attacker wins, gains points from target
         await supabase
           .from('sg_player_points')
-          .update({ points: attackerPoints.points + stealAmount })
+          .update({ points: currentAttackerPoints + stealAmount })
           .eq('user_id', attackerUser.id)
           .eq('round_id', roundId);
 
         await supabase
           .from('sg_player_points')
-          .update({ points: targetPoints.points - stealAmount })
+          .update({ points: targetPoints - stealAmount })
           .eq('user_id', targetId)
           .eq('round_id', roundId);
+
+        // Update the current attacker points for probability calculations in next iterations
+        currentAttackerPoints += stealAmount;
+
+        successfulSteals.push(`@${targetUsername} (you won ${stealAmount} pts)`);
       } else {
         // Attacker loses, loses bet amount
         await supabase
           .from('sg_player_points')
-          .update({ points: attackerPoints.points - betAmount })
+          .update({ points: currentAttackerPoints - betAmount })
           .eq('user_id', attackerUser.id)
           .eq('round_id', roundId);
 
-        // target wins bet amount
+        // Target gains bet amount
         await supabase
           .from('sg_player_points')
-          .update({ points: targetPoints.points + betAmount })
+          .update({ points: targetPoints + betAmount })
           .eq('user_id', targetId)
           .eq('round_id', roundId);
+
+        // Update the current attacker points for probability calculations in next iterations
+        currentAttackerPoints -= betAmount;
+
+        failedSteals.push(`@${targetUsername} (you lost ${betAmount} pts)`);
       }
 
       // Record the steal attempt
@@ -227,7 +271,7 @@ export async function POST(request: NextRequest) {
           target_id: targetId,
           amount: isSuccessful ? stealAmount : betAmount,
           successful: isSuccessful,
-          cast_id: castId || null
+          cast_id: castHash || null
         })
         .select()
         .single();
@@ -238,6 +282,7 @@ export async function POST(request: NextRequest) {
 
       results.push({
         targetId,
+        username: targetUsername,
         success: isSuccessful,
         amount: isSuccessful ? stealAmount : betAmount,
         actionId: actionData?.id,
@@ -245,14 +290,83 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Build response message
+    let responseMessage = `🥷 $${tokenSymbol} Steal Results:\n\n`;
+
+    if (successfulSteals.length > 0) {
+      responseMessage += `✅ Successful: ${successfulSteals.join(", ")}\n`;
+    }
+
+    if (failedSteals.length > 0) {
+      responseMessage += `❌ Failed: ${failedSteals.join(", ")}\n\n`;
+    }
+
+    responseMessage += `Your new $${tokenSymbol} 🦙 balance: ${currentAttackerPoints} points`;
+
+    // Send response through Neynar API
+    await publishResponseCast(
+      castHash,
+      responseMessage,
+      process.env.NEYNAR_SIGNER_UUID as string,
+      tokenId
+    );
+
     return NextResponse.json({
       success: true,
-      results
+      results,
+      newBalance: currentAttackerPoints
     });
 
   } catch (error) {
     console.error("Error processing steal action:", error);
     return NextResponse.json({ error: "Failed to process steal" }, { status: 500 });
+  }
+}
+
+// Function to publish a response cast using Neynar API with fetch
+async function publishResponseCast(
+  parentHash: string,
+  message: string,
+  signerUuid: string,
+  tokenId: number
+) {
+  try {
+    console.log(`Publishing response to ${parentHash}: ${message}`);
+
+    const response = await fetch('https://api.neynar.com/v2/farcaster/cast', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api_key': process.env.NEYNAR_API_KEY as string,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        signer_uuid: signerUuid,
+        text: message,
+        parent: parentHash,
+        embeds: [{
+          url: `${process.env.NEXT_PUBLIC_URL}/token/${tokenId}/steal`
+        }]
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(`Response cast published: ${data.cast.hash}`);
+
+    // update sg_player_actions table with the cast_id
+    await supabase
+      .from('sg_player_actions')
+      .update({ bot_reply_cast_id: data.cast.hash })
+      .eq('cast_id', parentHash);
+
+    return data.cast.hash;
+  } catch (error) {
+    console.error('Error publishing response cast:', error);
+    return null;
   }
 }
 

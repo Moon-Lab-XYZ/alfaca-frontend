@@ -2,6 +2,7 @@ import { CreatorAvatar } from "@/components/creator-avatar";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import sdk from "@farcaster/frame-sdk";
+import { mutate } from "swr";
 
 interface UserProfilesSectionProps {
   selectedUsers: any[];
@@ -31,6 +32,7 @@ export const UserProfilesSection = ({
     } else {
       window.open(url, "_blank");
     }
+    mutate(`stealCandidates-${tokenId}`);
   };
 
   return (

@@ -15,6 +15,7 @@ interface SimpleCoinCardProps {
   contract_address: string;
   link: string;
   users: any;
+  is_sg: boolean;
 }
 
 export const SimpleCoinCard = ({
@@ -27,6 +28,7 @@ export const SimpleCoinCard = ({
   contract_address,
   link,
   users,
+  is_sg,
 }: SimpleCoinCardProps) => {
   const { toast } = useToast();
   const router = useRouter();
@@ -122,12 +124,16 @@ export const SimpleCoinCard = ({
               <ExternalLink size={14} /> DEX
             </button>
           </div>
-          <button
-            onClick={handleStealClick}
-            className="flex items-center justify-center gap-1.5 bg-[#E5DEFF] rounded-lg py-1.5 px-3 text-md text-black font-medium hover:bg-[#E5DEFF]/90 transition-all duration-300 hover:scale-105 w-full mt-3"
-          >
-            Steal <Sparkles size={14} className="text-[#FFB800] ml-1 animate-sword-glow" />
-          </button>
+          {
+            is_sg ?
+            <button
+              onClick={handleStealClick}
+              className="flex items-center justify-center gap-1.5 bg-[#E5DEFF] rounded-lg py-1.5 px-3 text-md text-black font-medium hover:bg-[#E5DEFF]/90 transition-all duration-300 hover:scale-105 w-full mt-3"
+            >
+              Steal <Sparkles size={14} className="text-[#FFB800] ml-1 animate-sword-glow" />
+            </button>
+            : null
+          }
         </div>
       </div>
     </div>
