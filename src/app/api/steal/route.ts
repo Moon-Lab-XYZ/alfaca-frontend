@@ -69,11 +69,28 @@ export async function POST(request: NextRequest) {
 
     console.log(`Updated user ${attackerUser.id} status to ACTIVE`);
 
+    // 5. Parse castId from data.hash
+    const castHash = bodyData.data.hash;
+    console.log(`Cast Hash: ${castHash}`);
+
     // 3. Extract usernames from text and convert to user IDs
     const usernames = parseUsernames(castText);
     console.log(`Parsed usernames: ${usernames.join(', ')}`);
 
     if (usernames.length === 0) {
+      await fetch('https://api.neynar.com/v2/farcaster/cast', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api_key': process.env.NEYNAR_API_KEY as string,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          signer_uuid: process.env.NEYNAR_SIGNER_UUID as string,
+          text: 'An error occurred while trying to steal. Please do not edit the cast text and try again.',
+          parent: castHash,
+        }),
+      });
       return NextResponse.json({ error: "No target usernames found" }, { status: 400 });
     }
 
@@ -147,10 +164,6 @@ export async function POST(request: NextRequest) {
     const roundId = roundData.id;
     console.log(`Round ID: ${roundId}`);
 
-    // 5. Parse castId from data.hash
-    const castHash = bodyData.data.hash;
-    console.log(`Cast Hash: ${castHash}`);
-
     // Get attacker's points
     const { data: attackerPoints, error: attackerPointsError } = await supabase
       .from('sg_player_points')
@@ -179,6 +192,21 @@ export async function POST(request: NextRequest) {
     let currentAttackerPoints = attackerPoints.points;
 
     for (const targetId of targetIds) {
+      // Check if this steal attempt has already been processed
+      const { data: existingAction, error: checkError } = await supabase
+        .from('sg_player_actions')
+        .select('id')
+        .eq('attacker_id', attackerUser.id)
+        .eq('target_id', targetId)
+        .eq('cast_id', castHash)
+        .eq('round_id', roundId)
+        .maybeSingle();
+
+      if (existingAction) {
+        console.log(`Duplicate steal attempt detected: attacker=${attackerUser.id}, target=${targetId}, cast=${castHash}`);
+        continue;
+      }
+
       // Get target's points and username
       const { data: targetPointsData, error: targetPointsError } = await supabase
         .from('sg_player_points')
@@ -492,7 +520,6 @@ async function publishResponseCast(
     }
 
     const data = await response.json();
-    console.log(data);
     console.log(`Response cast published: ${data.cast.hash}`);
 
     // update sg_player_actions table with the cast_id
