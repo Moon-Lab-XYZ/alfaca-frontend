@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
+import { ethers } from "ethers";
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Look up the user ID from farcaster_id
     const { data: attackerUser, error: attackerError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, verified_addresses')
       .eq('farcaster_id', attackerFid)
       .single();
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     // Get token details
     const { data: tokenData, error: tokenError } = await supabase
       .from('tokens')
-      .select('symbol')
+      .select('symbol, contract_address')
       .eq('id', tokenId)
       .single();
 
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenSymbol = tokenData.symbol;
+    const contractAddress = tokenData.contract_address;
 
     // Find the latest active round for this token
     const { data: roundData, error: roundError } = await supabase
@@ -219,11 +221,21 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Calculate win probability using the formula
-      // P(win) = min(0.05 + 0.75 * (attacker_pct / (attacker_pct + defender_pct))^1.0, 0.80)
-      const totalPoints = currentAttackerPoints + targetPoints;
-      const attackerPct = currentAttackerPoints / totalPoints;
-      const winProbability = Math.min(0.05 + 0.75 * Math.pow(attackerPct, 1.0), 0.80);
+      // Get defender's wallet addresses
+      const { data: defenderWalletData, error: defenderWalletError } = await supabase
+        .from('users')
+        .select('verified_addresses')
+        .eq('id', targetId)
+        .single();
+
+      const percentages = await calculateTokenPercentages(
+        contractAddress,
+        attackerUser.verified_addresses,
+        defenderWalletData?.verified_addresses,
+      );
+
+      // Calculate win probability using our new function
+      const winProbability = calculateWinProbability(percentages.attackerPct, percentages.defenderPct);
 
       // Determine success
       const isSuccessful = Math.random() < winProbability;
@@ -248,7 +260,7 @@ export async function POST(request: NextRequest) {
         // Update the current attacker points for probability calculations in next iterations
         currentAttackerPoints += stealAmount;
 
-        successfulSteals.push(`@${targetUsername} (you won ${stealAmount} pts)`);
+        successfulSteals.push(`${targetUsername} (you won ${stealAmount} pts)`);
       } else {
         // Attacker loses, loses bet amount
         await supabase
@@ -267,7 +279,7 @@ export async function POST(request: NextRequest) {
         // Update the current attacker points for probability calculations in next iterations
         currentAttackerPoints -= betAmount;
 
-        failedSteals.push(`@${targetUsername} (you lost ${betAmount} pts)`);
+        failedSteals.push(`${targetUsername} (you lost ${betAmount} pts)`);
       }
 
       // Record the steal attempt
@@ -331,6 +343,123 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * Calculate token balance percentages for attacker and defender
+ * @param {string} contractAddress - The token contract address
+ * @param {string[]} attackerAddresses - Array of attacker wallet addresses
+ * @param {string[]} defenderAddresses - Array of defender wallet addresses
+ * @param {Object} fallbackData - Fallback data to use if blockchain query fails
+ * @returns {Object} Object containing attackerPct and defenderPct
+ */
+async function calculateTokenPercentages(
+  contractAddress: any,
+  attackerAddresses: any,
+  defenderAddresses: any,
+) {
+  try {
+    // Initialize ethers provider to connect to Base network
+    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+
+    // Create contract interface for ERC20 to query balances
+    const erc20Abi = [
+      "function totalSupply() view returns (uint256)",
+      "function balanceOf(address owner) view returns (uint256)"
+    ];
+
+    const tokenContract = new ethers.Contract(contractAddress, erc20Abi, provider);
+
+    // Get total supply
+    const totalSupply = await tokenContract.totalSupply();
+
+    // Sum up balances across all addresses for attacker
+    let attackerTotalBalance = BigInt(0);
+    for (const address of attackerAddresses) {
+      try {
+        const balance = await tokenContract.balanceOf(address);
+        attackerTotalBalance += balance;
+        console.log(`Attacker address ${address} has balance: ${balance}`);
+      } catch (err) {
+        console.warn(`Error fetching balance for attacker address ${address}:`, err);
+      }
+    }
+
+    // Sum up balances across all addresses for defender
+    let defenderTotalBalance = BigInt(0);
+    for (const address of defenderAddresses) {
+      try {
+        const balance = await tokenContract.balanceOf(address);
+        defenderTotalBalance += balance;
+        console.log(`Defender address ${address} has balance: ${balance}`);
+      } catch (err) {
+        console.warn(`Error fetching balance for defender address ${address}:`, err);
+      }
+    }
+
+    // Calculate percentages
+    const attackerPct = totalSupply > 0 ? Number(attackerTotalBalance) / Number(totalSupply) : 0;
+    const defenderPct = totalSupply > 0 ? Number(defenderTotalBalance) / Number(totalSupply) : 0;
+
+    console.log(`Token balances - Total: ${totalSupply}, Attacker: ${attackerTotalBalance}, Defender: ${defenderTotalBalance}`);
+    console.log(`Percentages - Attacker: ${attackerPct}, Defender: ${defenderPct}`);
+
+    return { attackerPct, defenderPct };
+  } catch (error) {
+    console.error("Error fetching token balances:", error);
+
+    return { attackerPct: 0, defenderPct: 0 };
+  }
+}
+
+/**
+ * Calculates win probability based on attacker and defender point percentages
+ * @param {number} attackerPct - Attacker's percentage of token holdings
+ * @param {number} defenderPct - Defender's percentage of token holdings
+ * @returns {number} Win probability between 0 and 1
+ */
+function calculateWinProbability(attackerPct: any, defenderPct: any) {
+  // Base constants
+  const MIN_WIN = 0.05;
+  const MAX_WIN = 0.80;
+  const EVEN_WIN = 0.50;
+
+  // If neither owns tokens → coin flip
+  if (attackerPct === 0 && defenderPct === 0) {
+    return EVEN_WIN;
+  }
+
+  // If both hold equally → fair fight
+  if (attackerPct === defenderPct) {
+    return EVEN_WIN;
+  }
+
+  // If only attacker owns tokens
+  if (defenderPct === 0) {
+    const ratio = attackerPct / 0.10; // 10% is the cap reference
+    return Math.min(EVEN_WIN + (MAX_WIN - EVEN_WIN) * Math.min(ratio, 1), MAX_WIN);
+  }
+
+  // If only defender owns tokens
+  if (attackerPct === 0) {
+    const ratio = defenderPct / 0.10;
+    return Math.max(EVEN_WIN - (EVEN_WIN - MIN_WIN) * Math.min(ratio, 1), MIN_WIN);
+  }
+
+  // If both own tokens → scale based on share ratio
+  const share = attackerPct / (attackerPct + defenderPct);
+
+  // JavaScript equivalent of numpy.interp
+  if (share <= 0) return MIN_WIN;
+  if (share >= 1) return MAX_WIN;
+
+  if (share < 0.5) {
+    // Interpolate between MIN_WIN and EVEN_WIN
+    return MIN_WIN + (EVEN_WIN - MIN_WIN) * (share / 0.5);
+  } else {
+    // Interpolate between EVEN_WIN and MAX_WIN
+    return EVEN_WIN + (MAX_WIN - EVEN_WIN) * ((share - 0.5) / 0.5);
+  }
+}
+
 // Function to publish a response cast using Neynar API with fetch
 async function publishResponseCast(
   parentHash: string,
@@ -363,6 +492,7 @@ async function publishResponseCast(
     }
 
     const data = await response.json();
+    console.log(data);
     console.log(`Response cast published: ${data.cast.hash}`);
 
     // update sg_player_actions table with the cast_id
