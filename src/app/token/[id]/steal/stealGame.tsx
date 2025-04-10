@@ -23,6 +23,7 @@ import moment from 'moment-timezone';
 import { mutate } from "swr";
 import sdk from "@farcaster/frame-sdk";
 import { signIn, getCsrfToken } from "next-auth/react";
+import { useSession } from "next-auth/react"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -37,6 +38,8 @@ const CoinWebsite = () => {
   const isSDKLoaded = useRef(false);
 
   const { data: user } = useUser();
+
+  const { data: session, status } = useSession();
 
   const getNonce = useCallback(async () => {
     const nonce = await getCsrfToken();
