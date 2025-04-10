@@ -181,7 +181,6 @@ const Profile = () => {
             image={userContext ? userContext.pfpUrl: "https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//placeholder.png"}
             volume24h={user?.user ? user.user.total_txn_vol_last_24h : 0}
             volumeCurrentRound={user?.user ? user.user.total_txn_vol_current_round : 0}
-            gradient={creatorGradient}
             rank={userWithRank ? userWithRank.rank : 'N/A'}
             onClick={() => {}}
           />
@@ -201,7 +200,7 @@ const Profile = () => {
                   </div>
                  :
                 <div className="font-bold text-3xl text-[#E5DEFF]">
-                  ~${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                  ~{totalEarnings === 0 ? '' : `$${totalEarnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </div>
               }
             </div>

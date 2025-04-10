@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import UserProfile from "./userProfile";
+import StealGame from "./stealGame";
 
 let frame = {
   version: "next",
@@ -35,7 +35,7 @@ export async function generateMetadata({params}: any): Promise<Metadata> {
   };
 }
 
-export default function Profile() {
-  return (<UserProfile />);
+export default function Game() {
+  return (<StealGame />);
 }
 

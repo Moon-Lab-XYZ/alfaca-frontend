@@ -269,9 +269,9 @@ export const ProfileCoinCard = ({
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-xs text-white/50">Earned Rewards</p>
-                  <p className="text-sm font-medium text-[#E5DEFF]">~${earnedRewards.toFixed(4)}</p>
+                  <p className="text-sm font-medium text-[#E5DEFF]">~{earnedRewards == 0 ? '' : `$${earnedRewards.toFixed(4)}}`}</p>
                 </div>
-                <button
+                {/* <button
                   onClick={handleClaim}
                   disabled={!!collectingTokenId}
                   className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-4 text-xs transition-colors ${
@@ -281,7 +281,7 @@ export const ProfileCoinCard = ({
                   }`}
                 >
                   <Wallet size={14} /> {collectingTokenId ? "Claiming..." : "Claim Rewards"}
-                </button>
+                </button> */}
               </div>
             </div>
           )}

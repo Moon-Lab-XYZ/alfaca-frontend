@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { toast } from "@/hooks/use-toast";
-import { ImagePlus, Twitter, Share2 } from "lucide-react";
+import { ImagePlus, Twitter, Share2, Wand2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { createClient } from "@supabase/supabase-js";
 import { signIn, getCsrfToken } from "next-auth/react";
@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation";
 import useUser from "@/lib/user";
 import { mutate } from "swr";
 import { Info } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Card } from "@/components/ui/card";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -31,6 +33,7 @@ const Launch = () => {
     ticker: "",
     image: null as File | null,
     imageUrl: "",
+    infeedGame: true,
   });
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [showFarcasterModal, setShowFarcasterModal] = useState(false);
@@ -168,6 +171,7 @@ const Launch = () => {
           name: formData.name,
           symbol: formData.ticker,
           imageUrl: formData.imageUrl,
+          isSg: formData.infeedGame,
         }),
       });
 
@@ -266,6 +270,29 @@ const Launch = () => {
                   )}
                 </div>
               </div>
+
+              {
+                user && user.user.is_sg_whitelisted ?
+                <Card className="bg-black/30 border border-white/10 p-4 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="w-5 h-5 text-[#E5DEFF]" />
+                      <label className="text-white text-sm font-medium font-['Outfit']">Stolen game</label>
+                    </div>
+                    <Switch
+                      checked={formData.infeedGame}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, infeedGame: checked }))
+                      }
+                      className="data-[state=checked]:bg-[#E5DEFF] data-[state=unchecked]:bg-white/10"
+                    />
+                  </div>
+                  <p className="text-white/60 text-xs mt-2 font-['Outfit']">
+                    Enable stolen in-feed game to let users interact with your token on farcaster
+                  </p>
+                </Card>
+                : null
+              }
 
               <button
                 type="submit"

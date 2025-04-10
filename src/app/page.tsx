@@ -3,7 +3,7 @@ import App from "./app";
 
 const frame = {
   version: "next",
-  imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v1.png`,
+  imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v2.png`,
   button: {
     title: "Launch Alfaca",
     action: {
@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Alfaca",
       description: "coin launch competition",
       images: [{
-        url: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v1.png`,
+        url: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v2.png`,
       }]
     },
     other: {

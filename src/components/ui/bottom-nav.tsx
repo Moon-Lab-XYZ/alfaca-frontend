@@ -1,7 +1,7 @@
 
 import Link from 'next/link'
 import { usePathname } from "next/navigation";
-import { Trophy, CircleDollarSign, User } from "lucide-react";
+import { Home, CircleDollarSign, User } from "lucide-react";
 
 export const BottomNav = () => {
   const pathname = usePathname();
@@ -18,8 +18,8 @@ export const BottomNav = () => {
               : "text-white/50 hover:text-white/70 hover:bg-white/5"
           }`}
         >
-          <Trophy size={22} />
-          <span className="text-xs font-medium">Ranking</span>
+          <Home size={22} />
+          <span className="text-xs font-medium">Home</span>
         </Link>
 
         <Link

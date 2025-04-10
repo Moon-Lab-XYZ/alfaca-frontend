@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
   const tokenPoolTick = -230200; // Default pool tick
   const tokenCreatorFid = session.user.fid;
   const tokenDeployer = session.user.userAddress;
+  const tokenIsSg = params.isSg;
 
   // Find an optimal salt
   const optimalSalt = await findOptimalSalt(
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
       link: `${DEX_SCREENER_BASE_URL}${optimalSalt.predictedAddress}`,
       contract_address: optimalSalt.predictedAddress.toLowerCase(),
       txn_hash: result.hash.toLowerCase(),
+      is_sg: tokenIsSg,
     }
   ])
 

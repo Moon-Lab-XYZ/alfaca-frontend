@@ -14,13 +14,12 @@ import useSWR from "swr";
 import { createClient } from "@supabase/supabase-js";
 import moment from 'moment-timezone';
 import useUser from "@/lib/user";
+import { SimpleCoinCard } from "@/components/simple-coin-card";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 );
-
-const DAILY_PRIZE_POOL_BASE_AMOUNT = 10;
 
 const Index = () => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -61,9 +60,12 @@ const Index = () => {
     error: leaderboardError,
     mutate: mutateLeaderboard,
     isLoading: leaderboardLoading,
-  } = useSWR(`leaderboard`, async () => {
+  } = useSWR(`trendingTokens`, async () => {
     try {
-      const { data: leaderboard, error } = await supabase.rpc('get_top_users_and_tokens');
+      const { data: leaderboard, error } = await supabase.from('tokens')
+        .select('*,users(*)')
+        .order('txn_vol_last_24h', { ascending: false })
+        .limit(50);
       if (error) console.error(error);
       return leaderboard;
     } catch (error) {
@@ -110,21 +112,25 @@ const Index = () => {
 
   useEffect(() => {
     const requestAddFrame = async () => {
-      const context = await sdk.context;
-      if (context && context.client.added === false && user) {
-        const result = await sdk.actions.addFrame();
-        if (result.notificationDetails && user) {
-          await fetch('/api/register-notifications', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: result.notificationDetails.url,
-              token: result.notificationDetails.token,
-            }),
-          });
+      try {
+        const context = await sdk.context;
+        if (context && context.client.added === false && user) {
+          const result = await sdk.actions.addFrame();
+          if (result.notificationDetails && user) {
+            await fetch('/api/register-notifications', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                url: result.notificationDetails.url,
+                token: result.notificationDetails.token,
+              }),
+            });
+          }
         }
+      } catch (error) {
+        console.log(error);
       }
     }
 
@@ -200,24 +206,13 @@ const Index = () => {
       <div className="bg-[#111111] shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
         <div className="max-w-md mx-auto px-4">
           <div className="py-4 text-center">
-            <div>
-              <span className="text-white/70 text-lg flex items-center justify-center gap-2">
-                🏆<span className="text-white">🦙</span>DAILY PRIZE POOL <span className="text-white">🦙</span>🏆
-              </span>
-              <div className="font-bold text-3xl text-white">
-                ~${currentRound ? (currentRound.prize_pool_amount_usd + DAILY_PRIZE_POOL_BASE_AMOUNT).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : DAILY_PRIZE_POOL_BASE_AMOUNT}
-              </div>
-              <div className="text-md text-white/50 mt-1 flex items-center justify-center gap-0.5">
-                {formatTime(timeLeft)}
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-md mx-auto px-4 mt-4 space-y-3 pb-12">
         {leaderboard ? leaderboard.map((coin: any, index: any) => (
-          <CoinCard key={index} {...coin} />
+          <SimpleCoinCard key={index} {...coin} />
         )) : null}
       </div>
       <BottomNav />
