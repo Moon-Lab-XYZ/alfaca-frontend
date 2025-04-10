@@ -216,6 +216,7 @@ const Profile = () => {
             tokenData.map((token: any, index: any) => (
               <ProfileCoinCard
                 key={index}
+                id={token.id}
                 name={token.name}
                 ticker={token.symbol}
                 image={token.image}

@@ -55,6 +55,7 @@ const lpLockerAbi = [
 ];
 
 interface ProfileCoinCardProps {
+  id: number;
   name: string;
   ticker: string;
   image: string;
@@ -67,6 +68,7 @@ interface ProfileCoinCardProps {
 }
 
 export const ProfileCoinCard = ({
+  id,
   name,
   ticker,
   image,
@@ -148,25 +150,19 @@ export const ProfileCoinCard = ({
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_URL}/user/${profileUserId}`);
-    toast({
-      description: "Share link copied",
-      duration: 2000,
-    });
-
-    // const context = await sdk.context;
-    // const url = `https://warpcast.com/~/compose?text=Launching%20my%20%24${ticker}%20as%20a%20%40alfaca%20Stolen%20game%20coin!%20Steal%20from%20other%20casters%20for%20a%20shot%20at%20the%20airdrop&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${json.tokenId}/steal`;
-    // console.log(url);
-    // console.log(context);
-    // try {
-    //   if (context) {
-    //     await sdk.actions.openUrl(url);
-    //   } else {
-    //     window.open(url, "_blank");
-    //   }
-    // } catch (error) {
-    //   console.log(error);
-    // }
+    const context = await sdk.context;
+    const url = `https://warpcast.com/~/compose?text=Launching%20my%20%24${ticker}%20as%20a%20%40alfaca%20Stolen%20game%20coin!%20Steal%20from%20other%20casters%20for%20a%20shot%20at%20the%20airdrop&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${id}/steal`;
+    console.log(url);
+    console.log(context);
+    try {
+      if (context) {
+        await sdk.actions.openUrl(url);
+      } else {
+        window.open(url, "_blank");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleDexScreener = async (e: React.MouseEvent) => {

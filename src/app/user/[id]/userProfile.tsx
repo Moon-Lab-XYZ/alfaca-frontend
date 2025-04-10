@@ -219,6 +219,7 @@ const Profile = () => {
           ) : tokenData && tokenData.length > 0 ? (
             tokenData.map((token: any, index: any) => (
               <ProfileCoinCard
+                id={token.id}
                 key={index}
                 name={token.name}
                 ticker={token.symbol}
