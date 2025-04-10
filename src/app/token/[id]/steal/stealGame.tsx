@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from 'next/navigation';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { CoinWebsiteHeader } from "@/components/coin-website/header";
 import { useToast } from "@/hooks/use-toast";
 import { PrizePoolCard } from "@/components/coin-website/prize-pool-card";
@@ -21,6 +21,8 @@ import { PlayersLeaderboard } from "@/components/coin-website/players-leaderboar
 import useUser from "@/lib/user";
 import moment from 'moment-timezone';
 import { mutate } from "swr";
+import sdk from "@farcaster/frame-sdk";
+import { signIn, getCsrfToken } from "next-auth/react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -32,8 +34,45 @@ const CoinWebsite = () => {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const { toast } = useToast();
   const [showRequirementModal, setShowRequirementModal] = useState(false);
+  const isSDKLoaded = useRef(false);
 
   const { data: user } = useUser();
+
+  const getNonce = useCallback(async () => {
+    const nonce = await getCsrfToken();
+    if (!nonce) throw new Error("Unable to generate nonce");
+    return nonce;
+  }, []);
+
+
+  useEffect(() => {
+    const load = async () => {
+      sdk.actions.ready();
+
+      if (status !== "authenticated") {
+        await authenticate();
+      }
+    };
+    const authenticate = async () => {
+      try {
+        const result = await sdk.actions.signIn({
+          nonce: await getNonce(),
+        });
+        const response = await signIn("credentials", {
+          message: result.message,
+          signature: result.signature,
+          redirect: false,
+        });
+      } catch (e) {
+        console.log("Failed to authenticate: ", e);
+      }
+    }
+
+    if (sdk && !isSDKLoaded.current) {
+      isSDKLoaded.current = true;
+      load();
+    }
+  }, [sdk]);
 
   const {
     data: tokenData,
