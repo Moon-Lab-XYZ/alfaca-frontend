@@ -37,12 +37,37 @@ export async function POST(request: NextRequest) {
 
     console.log('steal webhook received');
 
+    // 5. Parse castId from data.hash
+    const castHash = bodyData.data.hash;
+    console.log(`Cast Hash: ${castHash}`);
+
     // 1. Check if the text contains the invisible braille unicode
     const castText = bodyData.data.text;
     const hiddenCharRegex = /\u2800/;
     if (!hiddenCharRegex.test(castText)) {
       console.log('Missing hidden character marker');
       return NextResponse.json({ error: "Not a valid steal command" }, { status: 400 });
+    }
+
+    // 3. Extract usernames from text and convert to user IDs
+    const usernames = parseUsernames(castText);
+    console.log(`Parsed usernames: ${usernames.join(', ')}`);
+
+    if (usernames.length === 0) {
+      await fetch('https://api.neynar.com/v2/farcaster/cast', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api_key': process.env.NEYNAR_API_KEY as string,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          signer_uuid: process.env.NEYNAR_SIGNER_UUID as string,
+          text: 'An error occurred while trying to steal. Please do not edit the cast text and try again.',
+          parent: castHash,
+        }),
+      });
+      return NextResponse.json({ error: "No target usernames found" }, { status: 400 });
     }
 
     // 2. Parse attackerId from author.fid
@@ -68,31 +93,6 @@ export async function POST(request: NextRequest) {
       .eq('id', attackerUser.id);
 
     console.log(`Updated user ${attackerUser.id} status to ACTIVE`);
-
-    // 5. Parse castId from data.hash
-    const castHash = bodyData.data.hash;
-    console.log(`Cast Hash: ${castHash}`);
-
-    // 3. Extract usernames from text and convert to user IDs
-    const usernames = parseUsernames(castText);
-    console.log(`Parsed usernames: ${usernames.join(', ')}`);
-
-    if (usernames.length === 0) {
-      await fetch('https://api.neynar.com/v2/farcaster/cast', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'api_key': process.env.NEYNAR_API_KEY as string,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          signer_uuid: process.env.NEYNAR_SIGNER_UUID as string,
-          text: 'An error occurred while trying to steal. Please do not edit the cast text and try again.',
-          parent: castHash,
-        }),
-      });
-      return NextResponse.json({ error: "No target usernames found" }, { status: 400 });
-    }
 
     // Convert usernames to user IDs
     const { data: targetUsers, error: targetUsersError } = await supabase
@@ -525,7 +525,7 @@ async function publishResponseCast(
  */
 function parseUsernames(text: string) {
   // Match the text between "from" and "on @alfaca!"
-  const regex = /from\s+(.+?)\s+on\s+@alfaca!/i;
+  const regex = /from\s+(.+?)\s+on\s+@alfaca/i;
   const match = text.match(regex);
 
   if (!match || !match[1]) {
@@ -535,7 +535,7 @@ function parseUsernames(text: string) {
   // Get the captured usernames part and split by commas and optional spaces
   const usernamesStr = match[1];
   // Split by comma and optional space, then trim each username
-  const usernames = usernamesStr.split(/\s*,\s*/).map((username: string) => username.trim());
+  const usernames = usernamesStr.split(/\s*,\s*/).map((username: string) => username.trim().replace('@', ''));
 
   return usernames;
 }
