@@ -45,7 +45,18 @@ export async function POST(request: NextRequest) {
   const tokenPoolTick = -230200; // Default pool tick
   const tokenCreatorFid = session.user.fid;
   const tokenDeployer = session.user.userAddress;
-  const tokenIsSg = params.isSg;
+
+  // get user from supabase
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", session.user.uid)
+    .single();
+
+  const tokenIsSg = params.isSg && user.is_sg_whitelisted;
+  if (!tokenIsSg) {
+    console.log(`❌ User ${user.farcaster_username} is not whitelisted for steal game`);
+  }
 
   // Find an optimal salt
   const optimalSalt = await findOptimalSalt(
@@ -87,7 +98,7 @@ export async function POST(request: NextRequest) {
   // Log transaction hash and deployed token address
   console.log("✅ Token deployed successfully!", result);
 
-  await supabase.from("tokens").insert([
+  const {data: createdToken } = await supabase.from("tokens").insert([
     {
       name: tokenName,
       symbol: tokenSymbol,
@@ -98,12 +109,13 @@ export async function POST(request: NextRequest) {
       txn_hash: result.hash.toLowerCase(),
       is_sg: tokenIsSg,
     }
-  ])
+  ]).select("*").single();
 
   return Response.json({
     success: true,
     transactionHash: result.hash,
-    tokenAddress: optimalSalt.predictedAddress
+    tokenAddress: optimalSalt.predictedAddress,
+    tokenId: createdToken.id,
   });
 }
 
