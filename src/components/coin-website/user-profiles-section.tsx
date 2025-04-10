@@ -26,7 +26,7 @@ export const UserProfilesSection = ({
     const urlEncodedUsernames = encodeURIComponent(selectedUsernames);
 
     const context = await sdk.context;
-    const url = `https://warpcast.com/~/compose?text=I%27m%20stealing%20%24${ticker}%20from%20${urlEncodedUsernames}%20on%20%40alfaca!%E2%A0%80&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${tokenId}/steal`;
+    const url = `https://warpcast.com/~/compose?text=I%27m%20stealing%20%24${ticker}%20from%20${urlEncodedUsernames}%20on%20%40alfaca!&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${tokenId}/steal`;
     if (context) {
       await sdk.actions.openUrl(url);
     } else {

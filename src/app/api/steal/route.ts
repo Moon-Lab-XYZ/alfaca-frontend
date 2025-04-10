@@ -41,13 +41,30 @@ export async function POST(request: NextRequest) {
     const castHash = bodyData.data.hash;
     console.log(`Cast Hash: ${castHash}`);
 
-    // 1. Check if the text contains the invisible braille unicode
-    const castText = bodyData.data.text;
-    const hiddenCharRegex = /\u2800/;
-    if (!hiddenCharRegex.test(castText)) {
-      console.log('Missing hidden character marker');
-      return NextResponse.json({ error: "Not a valid steal command" }, { status: 400 });
+    // 4. Extract token ID from embeds and find the latest active round
+    let tokenId = null;
+
+    // Check embeds for token ID
+    if (bodyData.data.embeds && bodyData.data.embeds.length > 0) {
+      for (const embed of bodyData.data.embeds) {
+        if (embed.url) {
+          const match = embed.url.match(/\/token\/(\d+)\/steal/);
+          if (match && match[1]) {
+            tokenId = parseInt(match[1]);
+            break;
+          }
+        }
+      }
     }
+
+    if (!tokenId) {
+      console.log('No token ID found in embeds');
+      return NextResponse.json({ error: "Token ID not found" }, { status: 400 });
+    }
+
+    console.log(`Token ID: ${tokenId}`);
+
+    const castText = bodyData.data.text;
 
     // 3. Extract usernames from text and convert to user IDs
     const usernames = parseUsernames(castText);
@@ -107,29 +124,6 @@ export async function POST(request: NextRequest) {
 
     const targetIds = targetUsers.map(user => user.id);
     console.log(`Target IDs: ${targetIds.join(', ')}`);
-
-    // 4. Extract token ID from embeds and find the latest active round
-    let tokenId = null;
-
-    // Check embeds for token ID
-    if (bodyData.data.embeds && bodyData.data.embeds.length > 0) {
-      for (const embed of bodyData.data.embeds) {
-        if (embed.url) {
-          const match = embed.url.match(/\/token\/(\d+)\/steal/);
-          if (match && match[1]) {
-            tokenId = parseInt(match[1]);
-            break;
-          }
-        }
-      }
-    }
-
-    if (!tokenId) {
-      console.log('No token ID found in embeds');
-      return NextResponse.json({ error: "Token ID not found" }, { status: 400 });
-    }
-
-    console.log(`Token ID: ${tokenId}`);
 
     // Get token details
     const { data: tokenData, error: tokenError } = await supabase
