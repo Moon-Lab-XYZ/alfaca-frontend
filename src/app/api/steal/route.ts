@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
           signer_uuid: process.env.NEYNAR_SIGNER_UUID as string,
           text: 'An error occurred while trying to steal. Please do not edit the cast text and try again.',
           parent: castHash,
+          idem: castHash,
         }),
       });
       return NextResponse.json({ error: "No target usernames found" }, { status: 400 });
