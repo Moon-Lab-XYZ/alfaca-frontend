@@ -1,6 +1,7 @@
 
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
+import sdk from "@farcaster/frame-sdk";
 
 export const CoinWebsiteHeader = ({ ticker }: { ticker: string }) => {
   const router = useRouter();
@@ -12,7 +13,7 @@ export const CoinWebsiteHeader = ({ ticker }: { ticker: string }) => {
   return (
     <div className="bg-[#111111] shadow-[0_4px_20px_rgba(0,0,0,0.4)] py-4">
       <div className="max-w-md mx-auto px-4">
-        <div className="flex items-center">
+        <div className="flex items-center w-full">
           <button
             onClick={handleBackClick}
             className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
@@ -21,10 +22,19 @@ export const CoinWebsiteHeader = ({ ticker }: { ticker: string }) => {
           </button>
           <div className="flex-1 text-center">
             <h1 className="text-xl font-medium text-white">
-              🥷 Steal ${ticker} 🥷
+              🥷 Stolen 🥷
             </h1>
+            <p className="text-[#E5DEFF] text-xl mt-0.5">${ticker}</p>
           </div>
-          <div className="w-10"></div> {/* This creates balance for the back button */}
+          <button
+            onClick={async () => {
+              await sdk.actions.openUrl("https://docs.google.com/document/d/1KbdMKb3xfMC9WURS3jF92zPkSCUDo_EpBclBZmSz6DY/edit?usp=sharing");
+            }}
+            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+            aria-label="Game Information"
+          >
+            <Info className="w-5 h-5 text-white" />
+          </button>
         </div>
       </div>
     </div>
