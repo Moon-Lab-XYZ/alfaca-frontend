@@ -438,52 +438,35 @@ async function calculateTokenPercentages(
   }
 }
 
-/**
- * Calculates win probability based on attacker and defender point percentages
- * @param {number} attackerPct - Attacker's percentage of token holdings
- * @param {number} defenderPct - Defender's percentage of token holdings
- * @returns {number} Win probability between 0 and 1
- */
 function calculateWinProbability(attackerPct: any, defenderPct: any) {
-  // Base constants
+  // Normalize inputs
+  attackerPct = Number(attackerPct) || 0;
+  defenderPct = Number(defenderPct) || 0;
+
   const MIN_WIN = 0.05;
   const MAX_WIN = 0.80;
   const EVEN_WIN = 0.50;
 
-  // If neither owns tokens → coin flip
-  if (attackerPct === 0 && defenderPct === 0) {
-    return EVEN_WIN;
-  }
+  if (attackerPct === 0 && defenderPct === 0) return EVEN_WIN;
+  if (attackerPct === defenderPct) return EVEN_WIN;
 
-  // If both hold equally → fair fight
-  if (attackerPct === defenderPct) {
-    return EVEN_WIN;
-  }
-
-  // If only attacker owns tokens
   if (defenderPct === 0) {
-    const ratio = attackerPct / 0.10; // 10% is the cap reference
+    const ratio = attackerPct / 0.10;
     return Math.min(EVEN_WIN + (MAX_WIN - EVEN_WIN) * Math.min(ratio, 1), MAX_WIN);
   }
 
-  // If only defender owns tokens
   if (attackerPct === 0) {
     const ratio = defenderPct / 0.10;
     return Math.max(EVEN_WIN - (EVEN_WIN - MIN_WIN) * Math.min(ratio, 1), MIN_WIN);
   }
 
-  // If both own tokens → scale based on share ratio
   const share = attackerPct / (attackerPct + defenderPct);
 
-  // JavaScript equivalent of numpy.interp
   if (share <= 0) return MIN_WIN;
   if (share >= 1) return MAX_WIN;
-
   if (share < 0.5) {
-    // Interpolate between MIN_WIN and EVEN_WIN
     return MIN_WIN + (EVEN_WIN - MIN_WIN) * (share / 0.5);
   } else {
-    // Interpolate between EVEN_WIN and MAX_WIN
     return EVEN_WIN + (MAX_WIN - EVEN_WIN) * ((share - 0.5) / 0.5);
   }
 }

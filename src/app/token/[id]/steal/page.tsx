@@ -5,7 +5,7 @@ let frame = {
   version: "next",
   imageUrl: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v2.png`,
   button: {
-    title: "Launch Alfaca",
+    title: "Steal 🦙",
     action: {
       type: "launch_frame",
       name: "Alfaca",
@@ -18,13 +18,13 @@ let frame = {
 
 export async function generateMetadata({params}: any): Promise<Metadata> {
   const data = await params;
-  frame.button.action.url = `${process.env.NEXT_PUBLIC_URL}/user/${data.id}`;
+  frame.button.action.url = `${process.env.NEXT_PUBLIC_URL}/token/${data.id}/steal`;
 
   return {
     title: "Alfaca",
     openGraph: {
       title: "Alfaca",
-      description: "coin launch competition",
+      description: "stolen",
       images: [{
         url: `https://wqwoggfcacagsgwlxjhs.supabase.co/storage/v1/object/public/images//og-image-v2.png`,
       }]

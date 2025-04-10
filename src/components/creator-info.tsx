@@ -28,11 +28,14 @@ export const CreatorInfo = ({
         {rank && (
           <span className="text-xl font-bold text-white/90">#{rank}</span>
         )}
-        <CreatorAvatar
-          username={username}
-          image={image}
-          type="creator"
-        />
+        {
+          image ?
+            <CreatorAvatar
+              username={username}
+              image={image}
+              type="creator"
+            /> : null
+        }
       </div>
       <div className="flex flex-col">
         <span className="text-base text-white/90">

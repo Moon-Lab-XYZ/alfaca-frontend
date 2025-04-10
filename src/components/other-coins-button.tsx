@@ -21,11 +21,11 @@ export const OtherCoinsButton = ({
       className="w-full mt-3 flex items-center justify-between p-3 rounded-xl bg-black/40 hover:bg-black/60 transition-colors border border-white/5 group"
     >
       <div className="flex items-center gap-3">
-        <CreatorAvatar
+        {image ? <CreatorAvatar
           username={ticker}
           image={image}
           size="sm"
-        />
+        /> : null}
         <div className="text-sm text-white/70">
           ${ticker}
           {coinsCount > 0 && (

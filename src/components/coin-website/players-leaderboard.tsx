@@ -175,12 +175,12 @@ export const PlayersLeaderboard = ({ ticker, tokenId, currentUser }: PlayersLead
                   </TableCell>
                   <TableCell className="text-white text-left">
                     <div className="flex items-center gap-2">
-                      <CreatorAvatar
+                      {player.avatar_url ? <CreatorAvatar
                         username={player.username}
                         image={player.avatar_url}
                         size="sm"
                         type="creator"
-                      />
+                      /> : null}
                       <span>@{player.username}</span>
                     </div>
                   </TableCell>
