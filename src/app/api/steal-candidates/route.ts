@@ -25,28 +25,15 @@ interface StealCandidate {
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Get URL parameters
+  const searchParams = request.nextUrl.searchParams;
+  const tokenId = searchParams.get('tokenId');
+
+  if (!tokenId) {
+    return NextResponse.json({ error: "Missing tokenId parameter" }, { status: 400 });
   }
 
   try {
-    // Get URL parameters
-    const searchParams = request.nextUrl.searchParams;
-    const tokenId = searchParams.get('tokenId');
-    const userId = session.user.uid;
-
-    const { data: userData } = await supabase
-      .from('users')
-      .select('farcaster_id')
-      .eq('id', userId)
-      .single();
-
-    if (!tokenId) {
-      return NextResponse.json({ error: "Missing tokenId parameter" }, { status: 400 });
-    }
-
-    console.log("Fetching steal candidates for token:", tokenId);
-
     // Get or create the current/next round for the token
     const currentRound = await getOrCreateRound(tokenId);
 
@@ -55,6 +42,21 @@ export async function GET(request: NextRequest) {
         error: "Failed to get or create a round for this token"
       }, { status: 500 });
     }
+
+    // If no session, return random candidates
+    if (!session) {
+      console.log("No session, returning random candidates");
+      return await getRandomCandidates(currentRound.id);
+    }
+
+    const userId = session.user.uid;
+    const { data: userData } = await supabase
+      .from('users')
+      .select('farcaster_id')
+      .eq('id', userId)
+      .single();
+
+    console.log("Fetching steal candidates for token:", tokenId);
 
     const candidates: StealCandidate[] = [];
 
@@ -290,6 +292,82 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching steal candidates:", error);
     return NextResponse.json({ error: "Failed to fetch steal candidates" }, { status: 500 });
+  }
+}
+
+// Function to get random candidates when no session is available
+async function getRandomCandidates(roundId: number) {
+  try {
+    const candidates: StealCandidate[] = [];
+
+    // 1. First try to get candidates that already have player points
+    const { data: usersWithPoints } = await supabase
+      .from('sg_player_points')
+      .select(`
+        points,
+        users:user_id (
+          id,
+          farcaster_username,
+          avatar_url,
+          farcaster_id
+        )
+      `)
+      .eq('round_id', roundId)
+      .order('points', { ascending: false })
+      .limit(3);
+
+    if (usersWithPoints && usersWithPoints.length > 0) {
+      for (const pointsData of usersWithPoints) {
+        const userData = pointsData.users;
+        const userObj = Array.isArray(userData) ? userData[0] : userData;
+
+        if (userObj && userObj.id) {
+          candidates.push({
+            id: userObj.id.toString(),
+            username: userObj.farcaster_username || "Unknown",
+            avatar_url: userObj.avatar_url || "",
+            farcaster_id: userObj.farcaster_id || 0,
+            points: pointsData.points || 100,
+            source: "random"
+          });
+
+          console.log(`Added random candidate with existing points: ${userObj.farcaster_username}`);
+        }
+      }
+    }
+
+    // 2. If we don't have enough candidates, get random users from the database
+    if (candidates.length < 3) {
+      const { data: randomUsers } = await supabase
+        .from('users')
+        .select('id, farcaster_username, avatar_url, farcaster_id')
+        .not('id', 'in', candidates.map(c => c.id).join(','))
+        .limit(3 - candidates.length);
+
+      if (randomUsers && randomUsers.length > 0) {
+        for (const user of randomUsers) {
+          // Ensure each user has a player_points entry for this round
+          const pointsData = await ensurePlayerPointsEntry(roundId, user.id);
+
+          candidates.push({
+            id: user.id.toString(),
+            username: user.farcaster_username || "Unknown",
+            avatar_url: user.avatar_url || "",
+            farcaster_id: user.farcaster_id || 0,
+            points: pointsData?.points || 100,
+            source: "random"
+          });
+
+          console.log(`Added random candidate: ${user.farcaster_username}`);
+        }
+      }
+    }
+
+    console.log(`Returning ${candidates.length} random candidates`);
+    return NextResponse.json(candidates);
+  } catch (error) {
+    console.error("Error getting random candidates:", error);
+    return NextResponse.json({ error: "Failed to fetch random candidates" }, { status: 500 });
   }
 }
 
