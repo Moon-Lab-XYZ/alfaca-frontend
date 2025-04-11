@@ -105,7 +105,7 @@ export const PrizePoolCard = ({
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               </div>
             ) : (
-              `$${prizePoolData.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              `~$${prizePoolData.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             )}
           </div>
           <div className="text-sm text-white/50 mt-2 flex items-center justify-center gap-0.5">
