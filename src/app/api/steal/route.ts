@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const usernames = parseUsernames(castText);
     console.log(`Parsed usernames: ${usernames.join(', ')}`);
 
-    if (usernames.length === 0) {
+    if (usernames.length === 0 && !castText.includes('Launching my')) {
       await fetch('https://api.neynar.com/v2/farcaster/cast', {
         method: 'POST',
         headers: {
@@ -489,7 +489,8 @@ async function publishResponseCast(
         parent: parentHash,
         embeds: [{
           url: `${process.env.NEXT_PUBLIC_URL}/token/${tokenId}/steal`
-        }]
+        }],
+        idem: parentHash,
       }),
     });
 
