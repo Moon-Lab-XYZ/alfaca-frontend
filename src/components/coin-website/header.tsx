@@ -28,7 +28,12 @@ export const CoinWebsiteHeader = ({ ticker }: { ticker: string }) => {
           </div>
           <button
             onClick={async () => {
-              await sdk.actions.openUrl("https://docs.google.com/document/d/1KbdMKb3xfMC9WURS3jF92zPkSCUDo_EpBclBZmSz6DY/edit?usp=sharing");
+              const context = await sdk.context;
+              if (context) {
+                await sdk.actions.openUrl("https://docs.google.com/document/d/1KbdMKb3xfMC9WURS3jF92zPkSCUDo_EpBclBZmSz6DY/edit?usp=sharing");
+              } else {
+                window.open("https://docs.google.com/document/d/1KbdMKb3xfMC9WURS3jF92zPkSCUDo_EpBclBZmSz6DY/edit?usp=sharing", "_blank");
+              }
             }}
             className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
             aria-label="Game Information"
