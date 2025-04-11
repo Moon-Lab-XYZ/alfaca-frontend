@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Target not found in this round"
         });
-        failedSteals.push(`@${targetUsers.find(u => u.id === targetId)?.farcaster_username || 'unknown'} (not in game)`);
+        failedSteals.push(`${targetUsers.find(u => u.id === targetId)?.farcaster_username || 'unknown'} (not in game)`);
         continue;
       }
 
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
           error: "Target has no points to steal"
         });
         console.log(`Target ${targetUsername} has no points to steal`);
-        failedSteals.push(`@${targetUsername} (no points)`);
+        failedSteals.push(`${targetUsername} (no points)`);
         continue;
       }
 
