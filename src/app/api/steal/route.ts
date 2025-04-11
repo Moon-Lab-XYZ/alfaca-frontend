@@ -496,6 +496,8 @@ async function publishResponseCast(
 
     if (!response.ok) {
       console.error('Error publishing response cast:', response);
+      const body = await response.json();
+      console.error('Response body:', body);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
