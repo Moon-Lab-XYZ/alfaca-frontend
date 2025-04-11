@@ -318,7 +318,7 @@ const Launch = () => {
             </DialogTitle>
 
             <DialogDescription className="text-white/70 text-center font-['Outfit']">
-              Use our <a href="https://warpcast.com/" target="_blank" className="underline">Farcaster</a> frame to launch a coin through Alfaca.
+              Use our <a href="https://warpcast.com/" target="_blank" className="underline">Farcaster</a> mini app to launch a coin through Alfaca.
             </DialogDescription>
 
             <button

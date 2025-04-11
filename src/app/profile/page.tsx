@@ -4,7 +4,6 @@ import { BottomNav } from "@/components/ui/bottom-nav";
 import { ProfileCoinCard } from "@/components/profile-coin-card";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { CreatorInfo } from "@/components/creator-info";
-import { pastelGradients } from "@/lib/coin-card-utils";
 import sdk, {
   type Context,
 } from "@farcaster/frame-sdk";
@@ -24,8 +23,6 @@ const supabase = createClient(
 );
 
 const Profile = () => {
-  const creatorGradient = pastelGradients[0];
-
   const [userContext, setUserContext] = useState<any>(null);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [showFarcasterModal, setShowFarcasterModal] = useState(false);
@@ -194,7 +191,7 @@ const Profile = () => {
                 💰 Total Earnings
               </span>
               {
-                totalEarningsIsLoading ?
+                totalEarningsIsLoading && !totalEarnings ?
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-6 h-6 border-4 border-[#E5DEFF] border-t-transparent rounded-full animate-spin my-2"></div>
                   </div>
@@ -248,7 +245,7 @@ const Profile = () => {
             </DialogTitle>
 
             <DialogDescription className="text-white/70 text-center font-['Outfit']">
-              Use our <a href="https://warpcast.com/" target="_blank" className="underline">Farcaster</a> frame to launch a coin through Alfaca.
+              Use our <a href="https://warpcast.com/" target="_blank" className="underline">Farcaster</a> mini app to launch a coin through Alfaca.
             </DialogDescription>
 
             <button
