@@ -151,7 +151,7 @@ export const ProfileCoinCard = ({
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const context = await sdk.context;
-    const url = `https://warpcast.com/~/compose?text=Launching%20my%20%24${ticker}%20as%20a%20%40alfaca%20Stolen%20game%20coin!%20Steal%20from%20other%20casters%20for%20a%20shot%20at%20the%20airdrop&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${id}/steal`;
+    const url = `https://warpcast.com/~/compose?text=Launching%20my%20%24${ticker}%20as%20a%20%40alfaca%20Stolen%20game%20coin!%20Steal%20from%20other%20casters%20for%20a%20shot%20at%20the%20airdrop%0A%0A${contractAddress}&embeds[]=${process.env.NEXT_PUBLIC_URL}/token/${id}/steal`;
     console.log(url);
     console.log(context);
     try {
